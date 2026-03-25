@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYB 305: Chain of Custody Portal</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: #e2e8f0;
+            padding: 40px 20px;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            max-width: 750px;
+            width: 100%;
+            background: rgba(30, 41, 59, 0.7);
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid #334155;
+        }
+        h1 {
+            color: #f8fafc;
+            font-weight: 800;
+            font-size: 28px;
+            text-align: center;
+            margin-bottom: 30px;
+            letter-spacing: -0.5px;
+        }
+        h1 span {
+            background: -webkit-linear-gradient(45deg, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        h3 { color: #f1f5f9; margin-bottom: 5px; font-weight: 600; }
+        p { color: #94a3b8; font-size: 14px; margin-top: 0; }
+        
+        .card {
+            background: rgba(15, 23, 42, 0.6);
+            padding: 25px;
+            border-radius: 12px;
+            margin-top: 25px;
+            border-left: 4px solid #38bdf8;
+            border-right: 1px solid #334155;
+            border-top: 1px solid #334155;
+            border-bottom: 1px solid #334155;
+            transition: transform 0.2s ease;
+        }
+        .card:hover { transform: translateY(-2px); }
+        .card-transfer { border-left-color: #f59e0b; }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            margin-top: 12px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: #f8fafc;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+            transition: border-color 0.2s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1);
+        }
+        input::placeholder { color: #475569; }
+        input[type="file"] {
+            padding: 10px;
+            background: #1e293b;
+            color: #94a3b8;
+            cursor: pointer;
+        }
+        input[type="file"]::-webkit-file-upload-button {
+            background: #334155;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 10px;
+            font-weight: 600;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            margin-top: 20px;
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.39);
+            transition: all 0.2s ease;
+        }
+        button:hover {
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.23);
+            transform: translateY(-1px);
+        }
+        #connectBtn {
+            background: #1e293b;
+            border: 1px solid #475569;
+            box-shadow: none;
+        }
+        #connectBtn:hover { background: #334155; }
+        .btn-transfer { background: linear-gradient(135deg, #d97706, #ea580c); box-shadow: 0 4px 14px 0 rgba(234, 88, 12, 0.39); }
+        .btn-transfer:hover { box-shadow: 0 6px 20px rgba(234, 88, 12, 0.23); }
+
+        .status {
+            margin-top: 15px;
+            font-size: 13px;
+            font-family: 'JetBrains Mono', monospace;
+            word-wrap: break-word;
+            padding: 12px;
+            border-radius: 6px;
+            display: none;
+        }
+        .status.active { display: block; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.2); color: #38bdf8; }
+        .status.success { display: block; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.2); color: #4ade80; }
+        .status.error { display: block; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #f87171; }
+        
+        #walletAddress { text-align: center; font-family: 'JetBrains Mono', monospace; color: #10b981; font-size: 13px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Chain Of Custody <span>Forensics Ledger</span></h1>
+    
+    <button id="connectBtn">🔒 Connect Investigator Wallet</button>
+    <p id="walletAddress"></p>
+
+    <div class="card">
+        <h3>A. Initial Evidence Intake</h3>
+        <p>Uploads file to Walrus Storage and logs initial seizure.</p>
+        <input type="text" id="intakeCaseId" placeholder="Case / Item ID (e.g., Laptop_001)">
+        <input type="text" id="intakeCustodian" placeholder="Seizing Officer Name">
+        <input type="file" id="evidenceFile">
+        <button id="intakeBtn">Upload to Walrus & Log Seizure</button>
+        <div id="intakeStatus" class="status"></div>
+    </div>
+
+    <div class="card card-transfer">
+        <h3>B. Transfer / Update Custody</h3>
+        <p>Logs a transfer without re-uploading the evidence file.</p>
+        <input type="text" id="transferCaseId" placeholder="Case / Item ID (Must match exactly)">
+        <input type="text" id="transferCustodian" placeholder="Receiving Custodian Name">
+        <input type="text" id="transferAction" placeholder="Action (e.g., Received at Forensics Lab)">
+        <input type="text" id="transferWalrusId" placeholder="Paste existing Walrus Blob ID here">
+        <button id="transferBtn" class="btn-transfer">Sign Custody Transfer on Blockchain</button>
+        <div id="transferStatus" class="status"></div>
+    </div>
+</div>
+
+<script>
+    // --- ⚠️ PASTE YOUR REMIX CONTRACT ADDRESS HERE ⚠️ ---
+    const contractAddress = "0x0CAa2d65ee8a78cE92421De2102cE52d72b5bc16"; 
+
+    const contractABI = [
+        {
+            "inputs": [
+                { "internalType": "string", "name": "_caseId", "type": "string" },
+                { "internalType": "string", "name": "_custodian", "type": "string" },
+                { "internalType": "string", "name": "_action", "type": "string" },
+                { "internalType": "string", "name": "_walrusBlobId", "type": "string" }
+            ],
+            "name": "logEvidence",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        }
+    ];
+
+    let provider, signer, contract;
+
+    // --- CONNECT WALLET ---
+    document.getElementById('connectBtn').addEventListener('click', async () => {
+        if (window.ethereum) {
+            provider = new ethers.providers.Web3Provider(window.ethereum);
+            await provider.send("eth_requestAccounts", []);
+            signer = provider.getSigner();
+            document.getElementById('walletAddress').innerText = "Wallet Connected: " + await signer.getAddress();
+            contract = new ethers.Contract(contractAddress, contractABI, signer);
+            document.getElementById('connectBtn').innerText = "✅ Wallet Connected";
+        } else {
+            alert("Please install MetaMask!");
+        }
+    });
+
+    // --- FUNCTION A: INITIAL INTAKE ---
+    document.getElementById('intakeBtn').addEventListener('click', async () => {
+        const caseId = document.getElementById('intakeCaseId').value;
+        const custodian = document.getElementById('intakeCustodian').value;
+        const fileInput = document.getElementById('evidenceFile');
+        const statusText = document.getElementById('intakeStatus');
+
+        if (!caseId || !custodian || fileInput.files.length === 0) return alert("Fill all fields and attach a file!");
+
+        try {
+            statusText.className = "status active";
+            statusText.innerText = "1/2: Securing file on Walrus Decentralized Storage...";
+            
+            const file = fileInput.files[0];
+            const walrusResponse = await fetch("https://publisher.walrus-testnet.walrus.space/v1/store?epochs=5", { method: "PUT", body: file });
+            const walrusData = await walrusResponse.json();
+            const blobId = walrusData.alreadyCertified ? walrusData.alreadyCertified.blobId : walrusData.newlyCreated.blobObject.blobId;
+            
+            statusText.innerText = `2/2: Secured on Walrus (ID: ${blobId}). Signing ledger on Polygon...`;
+
+            const tx = await contract.logEvidence(caseId, custodian, "Initial Seizure", blobId);
+            await tx.wait();
+            
+            statusText.className = "status success";
+            statusText.innerText = `> SUCCESS: Evidence logged.\n> WALRUS ID: ${blobId}\n> Save this ID for future transfers.`;
+        } catch (error) {
+            statusText.className = "status error";
+            statusText.innerText = "> ERROR: " + error.message;
+        }
+    });
+
+    // --- FUNCTION B: TRANSFER CUSTODY ---
+    document.getElementById('transferBtn').addEventListener('click', async () => {
+        const caseId = document.getElementById('transferCaseId').value;
+        const newCustodian = document.getElementById('transferCustodian').value;
+        const action = document.getElementById('transferAction').value;
+        const blobId = document.getElementById('transferWalrusId').value;
+        const statusText = document.getElementById('transferStatus');
+
+        if (!caseId || !newCustodian || !action || !blobId) return alert("Fill all fields to complete transfer!");
+
+        try {
+            statusText.className = "status active";
+            statusText.innerText = "> Requesting blockchain signature from MetaMask...";
+
+            const tx = await contract.logEvidence(caseId, newCustodian, action, blobId);
+            
+            statusText.innerText = "> Transaction pending on Polygon Amoy network...";
+            await tx.wait();
+            
+            statusText.className = "status success";
+            statusText.innerText = "> SUCCESS: Custody transfer permanently logged to the Chain of Custody.";
+        } catch (error) {
+            statusText.className = "status error";
+            statusText.innerText = "> ERROR: " + error.message;
+        }
+    });
+</script>
+</body>
+</html>
