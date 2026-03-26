@@ -31,7 +31,6 @@
             position: relative;
         }
         
-        /* LAYER LOGIC (Hiding and Showing) */
         .layer { display: none; animation: fadeIn 0.4s ease-in-out; }
         .layer.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -80,37 +79,36 @@
         <p style="margin-bottom: 25px;">Select an operational path below:</p>
         
         <button class="btn-menu" onclick="switchLayer('layer-intake')">
-            <span>A. Log New Evidence Intake</span> <span>➔</span>
+            <span>A. Log Initial Evidence Seizure</span> <span>➔</span>
         </button>
         <button class="btn-menu" onclick="switchLayer('layer-transfer')">
-            <span>B. Transfer / Update Custody</span> <span>➔</span>
+            <span>B. Transfer Custody to Officer/Lab</span> <span>➔</span>
         </button>
         <button class="btn-menu" onclick="loadHistory()">
-            <span>C. View Activity History</span> <span>➔</span>
+            <span>C. View Chain of Custody History</span> <span>➔</span>
         </button>
     </div>
 
     <div id="layer-intake" class="layer">
         <button class="btn-back" onclick="switchLayer('layer-dashboard')">← Back to Menu</button>
         <h3>Initial Evidence Intake</h3>
-        <p>Uploads file to Walrus Storage and logs initial seizure.</p>
+        <p>Logs seizure. Your wallet is automatically assigned as custodian.</p>
         
         <input type="text" id="inCaseId" placeholder="Case / Item ID (e.g., Laptop_001)">
-        <input type="text" id="inCustodian" placeholder="Seizing Officer (0x... Wallet Address)">
         <input type="file" id="inFile">
         
-        <button id="btnSubmitIntake">Upload to Walrus & Log Seizure</button>
+        <button id="btnSubmitIntake">Upload to Walrus & Lock Seizure</button>
         <div id="statusIntake" class="status-box"></div>
     </div>
 
     <div id="layer-transfer" class="layer">
         <button class="btn-back" onclick="switchLayer('layer-dashboard')">← Back to Menu</button>
         <h3>Transfer Custody</h3>
-        <p>Logs a transfer directly to the blockchain ledger.</p>
+        <p>Only the CURRENT custodian can initiate a transfer.</p>
         
         <input type="text" id="trCaseId" placeholder="Case / Item ID (Must match exactly)">
-        <input type="text" id="trCustodian" placeholder="Receiving Custodian (0x... Wallet Address)">
-        <input type="text" id="trAction" placeholder="Action (e.g., Received at Forensics Lab)">
+        <input type="text" id="trCustodian" placeholder="Receiving Officer (0x... Wallet Address)">
+        <input type="text" id="trAction" placeholder="Action (e.g., Relinquished to Forensics Lab)">
         <input type="text" id="trWalrusId" placeholder="Paste existing Walrus Blob ID here">
         
         <button id="btnSubmitTransfer" style="background: linear-gradient(135deg, #d97706, #ea580c);">Sign Transfer on Blockchain</button>
@@ -119,13 +117,13 @@
 
     <div id="layer-history" class="layer">
         <button class="btn-back" onclick="switchLayer('layer-dashboard')">← Back to Menu</button>
-        <h3>Your Activity History</h3>
-        <p>Fetching recent records from the Polygon Ledger...</p>
+        <h3>Chain of Custody History</h3>
+        <p>Fetching immutable state records from Polygon...</p>
         <div id="historyContainer"></div>
     </div>
 
     <div id="layer-success" class="layer text-center">
-        <h3 style="color: #4ade80; font-size: 24px; margin-bottom: 20px;">✅ Transaction Verified</h3>
+        <h3 style="color: #4ade80; font-size: 24px; margin-bottom: 20px;">✅ Block Confirmed</h3>
         <div id="successSummary" class="summary-card text-left">
             </div>
         <button onclick="switchLayer('layer-dashboard')" style="background: #1e293b; border: 1px solid #475569; margin-top: 30px;">Return to Dashboard</button>
@@ -134,28 +132,25 @@
 </div>
 
 <script>
-    // --- ⚠️ PASTE YOUR REMIX CONTRACT ADDRESS HERE ⚠️ ---
+    // --- ⚠️ PASTE YOUR NEW V3 REMIX CONTRACT ADDRESS HERE ⚠️ ---
     const contractAddress = "0x0CAa2d65ee8a78cE92421De2102cE52d72b5bc16"; 
 
-    // Upgraded ABI to include reading history arrays
+    // Upgraded ABI strictly for the V3 Contract
     const contractABI = [
-        { "inputs": [ { "internalType": "string", "name": "_caseId", "type": "string" }, { "internalType": "string", "name": "_custodian", "type": "string" }, { "internalType": "string", "name": "_action", "type": "string" }, { "internalType": "string", "name": "_walrusBlobId", "type": "string" } ], "name": "logEvidence", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
-        { "inputs": [], "name": "getTotalLogs", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "stateMutability": "view", "type": "function" },
-        { "inputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "name": "evidenceLogs", "outputs": [ { "internalType": "string", "name": "caseId", "type": "string" }, { "internalType": "string", "name": "custodian", "type": "string" }, { "internalType": "string", "name": "action", "type": "string" }, { "internalType": "string", "name": "walrusBlobId", "type": "string" }, { "internalType": "uint256", "name": "timestamp", "type": "uint256" } ], "stateMutability": "view", "type": "function" }
+      { "inputs": [ { "internalType": "string", "name": "_caseId", "type": "string" }, { "internalType": "string", "name": "_walrusBlobId", "type": "string" } ], "name": "logInitialSeizure", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+      { "inputs": [ { "internalType": "string", "name": "_caseId", "type": "string" }, { "internalType": "address", "name": "_newCustodian", "type": "address" }, { "internalType": "string", "name": "_action", "type": "string" }, { "internalType": "string", "name": "_walrusBlobId", "type": "string" } ], "name": "transferCustody", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+      { "inputs": [], "name": "getTotalLogs", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "stateMutability": "view", "type": "function" },
+      { "inputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "name": "evidenceHistory", "outputs": [ { "internalType": "string", "name": "caseId", "type": "string" }, { "internalType": "address", "name": "from", "type": "address" }, { "internalType": "address", "name": "to", "type": "address" }, { "internalType": "string", "name": "action", "type": "string" }, { "internalType": "string", "name": "walrusBlobId", "type": "string" }, { "internalType": "uint256", "name": "timestamp", "type": "uint256" } ], "stateMutability": "view", "type": "function" }
     ];
 
     let provider, signer, contract, userAddress;
 
-    // --- UI NAVIGATION LOGIC ---
     function switchLayer(layerId) {
         document.querySelectorAll('.layer').forEach(el => el.classList.remove('active'));
         document.getElementById(layerId).classList.add('active');
-        
-        // Reset status boxes when navigating
         document.querySelectorAll('.status-box').forEach(el => { el.classList.remove('active'); el.innerText = ""; });
     }
 
-    // --- LAYER 1: AUTHENTICATION ---
     document.getElementById('connectBtn').addEventListener('click', async () => {
         try {
             if (!window.ethereum) throw new Error("MetaMask is not installed.");
@@ -165,13 +160,8 @@
             userAddress = await signer.getAddress();
             contract = new ethers.Contract(contractAddress, contractABI, signer);
             
-            // Format address for badge (e.g., 0x1234...abcd)
             const shortAddr = userAddress.substring(0, 6) + "..." + userAddress.substring(userAddress.length - 4);
             document.getElementById('userBadge').innerText = "Logged in: " + shortAddr;
-            
-            // Auto-fill custodian fields with their own address for convenience
-            document.getElementById('inCustodian').value = userAddress;
-            
             switchLayer('layer-dashboard');
         } catch (error) {
             const errDiv = document.getElementById('authError');
@@ -180,14 +170,13 @@
         }
     });
 
-    // --- LAYER 3A: INTAKE EXECUTION ---
+    // --- FUNCTION A: V3 INTAKE ---
     document.getElementById('btnSubmitIntake').addEventListener('click', async () => {
         const caseId = document.getElementById('inCaseId').value;
-        const custodian = document.getElementById('inCustodian').value;
         const fileInput = document.getElementById('inFile');
         const statusText = document.getElementById('statusIntake');
 
-        if (!caseId || !custodian || fileInput.files.length === 0) return alert("Fill all fields!");
+        if (!caseId || fileInput.files.length === 0) return alert("Fill all fields!");
 
         try {
             statusText.classList.add('active');
@@ -206,41 +195,43 @@
                 statusText.innerText = `> WALRUS OFFLINE. Using Fail-Safe ID: ${blobId}. Requesting Signature...`;
             }
 
-            const tx = await contract.logEvidence(caseId, custodian, "Initial Seizure", blobId);
+            // Calls the new V3 logInitialSeizure function
+            const tx = await contract.logInitialSeizure(caseId, blobId);
             statusText.innerText = "> Transaction pending on Polygon...";
             await tx.wait();
             
-            showSuccessSummary("Intake", caseId, custodian, "Initial Seizure", blobId, tx.hash);
+            showSuccessSummary("Initial Seizure", caseId, "Auto-Assigned to You", "Seized & Secured", blobId, tx.hash);
         } catch (error) {
             statusText.innerText = "> ERROR: " + error.message;
         }
     });
 
-    // --- LAYER 3B: TRANSFER EXECUTION ---
+    // --- FUNCTION B: V3 TRANSFER ---
     document.getElementById('btnSubmitTransfer').addEventListener('click', async () => {
         const caseId = document.getElementById('trCaseId').value;
-        const custodian = document.getElementById('trCustodian').value;
+        const newCustodian = document.getElementById('trCustodian').value;
         const action = document.getElementById('trAction').value;
         const blobId = document.getElementById('trWalrusId').value;
         const statusText = document.getElementById('statusTransfer');
 
-        if (!caseId || !custodian || !action || !blobId) return alert("Fill all fields!");
+        if (!caseId || !newCustodian || !action || !blobId) return alert("Fill all fields!");
 
         try {
             statusText.classList.add('active');
             statusText.innerText = "> Requesting Blockchain Signature...";
 
-            const tx = await contract.logEvidence(caseId, custodian, action, blobId);
+            // Calls the new V3 transferCustody function
+            const tx = await contract.transferCustody(caseId, newCustodian, action, blobId);
             statusText.innerText = "> Transaction pending on Polygon...";
             await tx.wait();
             
-            showSuccessSummary("Transfer", caseId, custodian, action, blobId, tx.hash);
+            showSuccessSummary("Custody Transfer", caseId, newCustodian, action, blobId, tx.hash);
         } catch (error) {
             statusText.innerText = "> ERROR: " + error.message;
         }
     });
 
-    // --- LAYER 3C: FETCH HISTORY ---
+    // --- FUNCTION C: V3 FETCH HISTORY ---
     async function loadHistory() {
         switchLayer('layer-history');
         const container = document.getElementById('historyContainer');
@@ -254,19 +245,22 @@
             }
 
             let historyHTML = "";
-            // Loop backwards to show newest first (max 10 for performance)
             let limit = totalLogs > 10 ? totalLogs - 10 : 0;
             
             for (let i = totalLogs - 1; i >= limit; i--) {
-                const log = await contract.evidenceLogs(i);
-                // Convert blockchain timestamp to readable date
+                const log = await contract.evidenceHistory(i);
                 const date = new Date(log.timestamp * 1000).toLocaleString();
                 
+                // Formats the From/To addresses, noting if it was the initial seizure
+                const fromText = log.from === "0x0000000000000000000000000000000000000000" ? "[Initial Seizure]" : log.from.substring(0,6) + "..." + log.from.substring(38);
+                const toText = log.to.substring(0,6) + "..." + log.to.substring(38);
+
                 historyHTML += `
                     <div class="history-card">
                         <span style="color:#f8fafc;">Case:</span> ${log.caseId}<br>
                         <span style="color:#f8fafc;">Action:</span> ${log.action}<br>
-                        <span style="color:#f8fafc;">Custodian:</span> ${log.custodian.substring(0,8)}...<br>
+                        <span style="color:#f8fafc;">From:</span> <span style="color:#ef4444">${fromText}</span><br>
+                        <span style="color:#f8fafc;">To:</span> <span style="color:#4ade80">${toText}</span><br>
                         <span style="color:#f8fafc;">Date:</span> ${date}
                     </div>
                 `;
@@ -277,13 +271,12 @@
         }
     }
 
-    // --- LAYER 4: POPULATE SUCCESS SCREEN ---
-    function showSuccessSummary(type, caseId, custodian, action, blobId, txHash) {
+    function showSuccessSummary(type, caseId, toAddress, action, blobId, txHash) {
         const summaryDiv = document.getElementById('successSummary');
         summaryDiv.innerHTML = `
             <strong>Operation:</strong> ${type}<br><br>
             <strong>Case ID:</strong> ${caseId}<br>
-            <strong>Custodian:</strong> ${custodian}<br>
+            <strong>Handed To:</strong> ${toAddress}<br>
             <strong>Action:</strong> ${action}<br><br>
             <strong>Walrus ID:</strong> <br><span style="color:#f8fafc; font-size:11px;">${blobId}</span><br><br>
             <strong>Polygon Tx Hash:</strong> <br><span style="color:#38bdf8; font-size:11px;">${txHash}</span>
@@ -293,7 +286,6 @@
 </script>
 </body>
 </html>
-
 
 
 
