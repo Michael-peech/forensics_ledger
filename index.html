@@ -51,7 +51,6 @@
             overflow: hidden;
         }
 
-        /* Ambient Glow Behind Container */
         .container::before {
             content: ''; position: absolute; top: -50px; left: -50px; width: 150px; height: 150px;
             background: var(--accent-cyan); filter: blur(100px); opacity: 0.15; z-index: -1;
@@ -92,10 +91,16 @@
         input::placeholder, textarea::placeholder { color: #64748b; }
         textarea { resize: vertical; min-height: 120px; }
 
-        /* Custom Dropdown Arrow */
+        /* Dropdown Arrow & Background Fix */
         select {
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2300f0ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
             background-repeat: no-repeat; background-position: right 16px center; background-size: 16px; padding-right: 48px; cursor: pointer;
+        }
+        /* FIX: Forces the dropdown menu options to be dark so text is readable */
+        select option {
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-size: 15px;
         }
 
         /* File Upload Styling */
@@ -252,13 +257,13 @@
 
     <div id="layer-history" class="layer">
         <button class="btn-back" onclick="switchLayer('layer-dashboard')">← Dashboard</button>
-        <h3>Immutable Chain of Custody</h3>
+        <h3>Activity History</h3>
         <div id="historyContainer" style="max-height: 400px; overflow-y: auto; padding-right: 10px;"></div>
     </div>
 
     <div id="layer-locker" class="layer">
         <button class="btn-back" onclick="switchLayer('layer-dashboard')">← Dashboard</button>
-        <h3>Personal Evidence Locker</h3>
+        <h3>My Evidence Locker</h3>
         <p>Encrypted assets currently signed to your wallet address.</p>
         <div id="lockerGrid" class="grid-container"></div>
     </div>
@@ -298,10 +303,14 @@
 </div>
 
 <script>
-    // --- ⚠️ PASTE YOUR V4 REMIX CONTRACT ADDRESS HERE ⚠️ ---
-    const contractAddress = "YOUR_REMIX_CONTRACT_ADDRESS_HERE"; 
+    // --- ⚠️ PASTE YOUR V4.1 REMIX CONTRACT ADDRESS HERE ⚠️ ---
+    const contractAddress = "0xe531C24B1D7eFD84aBC5548d7841742b8c8ABf60"; 
 
+    // V4.1 ABI (Includes Events, validString checks, and lastAction)
     const contractABI = [
+      { "anonymous": false, "inputs": [ { "indexed": true, "internalType": "string", "name": "itemId", "type": "string" }, { "indexed": false, "internalType": "address", "name": "from", "type": "address" }, { "indexed": true, "internalType": "address", "name": "to", "type": "address" }, { "indexed": false, "internalType": "string", "name": "action", "type": "string" }, { "indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256" } ], "name": "CustodyTransferred", "type": "event" },
+      { "anonymous": false, "inputs": [ { "indexed": true, "internalType": "string", "name": "itemId", "type": "string" }, { "indexed": false, "internalType": "string", "name": "caseName", "type": "string" }, { "indexed": true, "internalType": "address", "name": "custodian", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256" } ], "name": "EvidenceLogged", "type": "event" },
+      { "anonymous": false, "inputs": [ { "indexed": true, "internalType": "string", "name": "itemId", "type": "string" }, { "indexed": true, "internalType": "address", "name": "tech", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256" } ], "name": "LabReportUpdated", "type": "event" },
       { "inputs": [ { "internalType": "string", "name": "_caseName", "type": "string" }, { "internalType": "string", "name": "_itemId", "type": "string" }, { "internalType": "string", "name": "_walrusBlobId", "type": "string" } ], "name": "logInitialSeizure", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
       { "inputs": [ { "internalType": "string", "name": "_itemId", "type": "string" }, { "internalType": "address", "name": "_newCustodian", "type": "address" }, { "internalType": "string", "name": "_action", "type": "string" } ], "name": "transferCustody", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
       { "inputs": [ { "internalType": "string", "name": "_itemId", "type": "string" }, { "internalType": "string", "name": "_analysis", "type": "string" }, { "internalType": "string", "name": "_evaluation", "type": "string" } ], "name": "submitLabReport", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
@@ -310,7 +319,7 @@
       { "inputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "name": "allItemIds", "outputs": [ { "internalType": "string", "name": "", "type": "string" } ], "stateMutability": "view", "type": "function" },
       { "inputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "name": "evidenceHistory", "outputs": [ { "internalType": "string", "name": "itemId", "type": "string" }, { "internalType": "address", "name": "from", "type": "address" }, { "internalType": "address", "name": "to", "type": "address" }, { "internalType": "string", "name": "action", "type": "string" }, { "internalType": "uint256", "name": "timestamp", "type": "uint256" } ], "stateMutability": "view", "type": "function" },
       { "inputs": [ { "internalType": "string", "name": "", "type": "string" } ], "name": "currentCustodian", "outputs": [ { "internalType": "address", "name": "", "type": "address" } ], "stateMutability": "view", "type": "function" },
-      { "inputs": [ { "internalType": "string", "name": "", "type": "string" } ], "name": "evidenceRegistry", "outputs": [ { "internalType": "string", "name": "caseName", "type": "string" }, { "internalType": "string", "name": "itemId", "type": "string" }, { "internalType": "string", "name": "walrusBlobId", "type": "string" }, { "internalType": "string", "name": "analysisReport", "type": "string" }, { "internalType": "string", "name": "evaluationReport", "type": "string" } ], "stateMutability": "view", "type": "function" }
+      { "inputs": [ { "internalType": "string", "name": "", "type": "string" } ], "name": "evidenceRegistry", "outputs": [ { "internalType": "string", "name": "caseName", "type": "string" }, { "internalType": "string", "name": "itemId", "type": "string" }, { "internalType": "string", "name": "walrusBlobId", "type": "string" }, { "internalType": "string", "name": "analysisReport", "type": "string" }, { "internalType": "string", "name": "evaluationReport", "type": "string" }, { "internalType": "string", "name": "lastAction", "type": "string" } ], "stateMutability": "view", "type": "function" }
     ];
 
     let provider, signer, contract, userAddress, currentActiveItemForLab = "";
@@ -493,21 +502,13 @@
         document.getElementById('labStatusAlert').innerHTML = "Verifying clearance protocols...";
         document.getElementById('labStatusAlert').style.borderLeftColor = "var(--text-muted)";
 
+        // OPTIMIZATION: We no longer need to scan the history logs! 
+        // We just read the lastAction directly from the V4.1 Evidence Registry.
         const registry = await contract.evidenceRegistry(itemId);
         document.getElementById('labAnalysis').value = registry.analysisReport;
         document.getElementById('labEvaluation').value = registry.evaluationReport;
 
-        let isLabTech = false;
-        const totalLogs = await contract.getTotalLogs();
-        for (let i = totalLogs - 1; i >= 0; i--) {
-            const log = await contract.evidenceHistory(i);
-            if (log.itemId === itemId) {
-                if (log.action === "Checked out for Forensic Imaging" || log.action === "Checked out for Data Analysis") {
-                    isLabTech = true;
-                }
-                break; 
-            }
-        }
+        let isLabTech = (registry.lastAction === "Checked out for Forensic Imaging" || registry.lastAction === "Checked out for Data Analysis");
 
         if (isLabTech) {
             document.getElementById('labStatusAlert').innerHTML = "<span style='color:var(--success-green)'>[ CLEARANCE GRANTED ]</span> Write-access enabled for forensic modules.";
@@ -547,17 +548,3 @@
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
