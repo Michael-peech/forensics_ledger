@@ -20,7 +20,7 @@
             align-items: center;
         }
         .container {
-            max-width: 750px;
+            max-width: 650px;
             width: 100%;
             background: rgba(30, 41, 59, 0.7);
             padding: 40px;
@@ -28,254 +28,271 @@
             box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
             backdrop-filter: blur(12px);
             border: 1px solid #334155;
+            position: relative;
         }
-        h1 {
-            color: #f8fafc;
-            font-weight: 800;
-            font-size: 28px;
-            text-align: center;
-            margin-bottom: 30px;
-            letter-spacing: -0.5px;
-        }
-        h1 span {
-            background: -webkit-linear-gradient(45deg, #38bdf8, #818cf8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+        
+        /* LAYER LOGIC (Hiding and Showing) */
+        .layer { display: none; animation: fadeIn 0.4s ease-in-out; }
+        .layer.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        h1 { color: #f8fafc; font-weight: 800; font-size: 26px; text-align: center; margin-bottom: 30px; }
+        h1 span { background: -webkit-linear-gradient(45deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         h3 { color: #f1f5f9; margin-bottom: 5px; font-weight: 600; }
         p { color: #94a3b8; font-size: 14px; margin-top: 0; }
         
-        .card {
-            background: rgba(15, 23, 42, 0.6);
-            padding: 25px;
-            border-radius: 12px;
-            margin-top: 25px;
-            border-left: 4px solid #38bdf8;
-            border-right: 1px solid #334155;
-            border-top: 1px solid #334155;
-            border-bottom: 1px solid #334155;
-            transition: transform 0.2s ease;
-        }
-        .card:hover { transform: translateY(-2px); }
-        .card-transfer { border-left-color: #f59e0b; }
+        .user-badge { background: #0f172a; border: 1px solid #38bdf8; color: #38bdf8; padding: 8px 15px; border-radius: 20px; font-family: 'JetBrains Mono', monospace; font-size: 12px; display: inline-block; margin-bottom: 25px; }
+        .text-center { text-align: center; }
 
-        input {
-            width: 100%;
-            padding: 14px;
-            margin-top: 12px;
-            background: #0f172a;
-            border: 1px solid #334155;
-            color: #f8fafc;
-            border-radius: 8px;
-            box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
-            transition: border-color 0.2s;
-        }
-        input:focus {
-            outline: none;
-            border-color: #38bdf8;
-            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1);
-        }
-        input::placeholder { color: #475569; }
-        input[type="file"] {
-            padding: 10px;
-            background: #1e293b;
-            color: #94a3b8;
-            cursor: pointer;
-        }
-        input[type="file"]::-webkit-file-upload-button {
-            background: #334155;
-            color: white;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            margin-right: 10px;
-            font-weight: 600;
-        }
+        input { width: 100%; padding: 14px; margin-top: 12px; background: #0f172a; border: 1px solid #334155; color: #f8fafc; border-radius: 8px; box-sizing: border-box; font-family: 'Inter', sans-serif; transition: 0.2s; }
+        input:focus { outline: none; border-color: #38bdf8; box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1); }
+        input[type="file"] { padding: 10px; background: #1e293b; color: #94a3b8; cursor: pointer; }
+        input[type="file"]::-webkit-file-upload-button { background: #334155; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; margin-right: 10px; font-weight: 600; }
 
-        button {
-            width: 100%;
-            padding: 14px;
-            margin-top: 20px;
-            background: linear-gradient(135deg, #0284c7, #2563eb);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 15px;
-            cursor: pointer;
-            box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.39);
-            transition: all 0.2s ease;
-        }
-        button:hover {
-            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.23);
-            transform: translateY(-1px);
-        }
-        #connectBtn {
-            background: #1e293b;
-            border: 1px solid #475569;
-            box-shadow: none;
-        }
-        #connectBtn:hover { background: #334155; }
-        .btn-transfer { background: linear-gradient(135deg, #d97706, #ea580c); box-shadow: 0 4px 14px 0 rgba(234, 88, 12, 0.39); }
-        .btn-transfer:hover { box-shadow: 0 6px 20px rgba(234, 88, 12, 0.23); }
-
-        .status {
-            margin-top: 15px;
-            font-size: 13px;
-            font-family: 'JetBrains Mono', monospace;
-            word-wrap: break-word;
-            padding: 12px;
-            border-radius: 6px;
-            display: none;
-        }
-        .status.active { display: block; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.2); color: #38bdf8; }
-        .status.success { display: block; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.2); color: #4ade80; }
-        .status.error { display: block; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #f87171; }
+        button { width: 100%; padding: 14px; margin-top: 15px; background: linear-gradient(135deg, #0284c7, #2563eb); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer; transition: all 0.2s ease; }
+        button:hover { transform: translateY(-1px); filter: brightness(1.1); }
         
-        #walletAddress { text-align: center; font-family: 'JetBrains Mono', monospace; color: #10b981; font-size: 13px; margin-top: 10px; }
+        .btn-menu { background: #1e293b; border: 1px solid #475569; text-align: left; padding: 20px; font-size: 16px; display: flex; justify-content: space-between; align-items: center; }
+        .btn-menu:hover { background: #334155; border-color: #38bdf8; }
+        .btn-back { background: transparent; border: 1px solid #475569; color: #94a3b8; margin-bottom: 20px; width: auto; padding: 8px 16px; font-size: 13px; }
+        .btn-back:hover { background: #334155; color: white; }
+
+        .status-box { margin-top: 15px; font-size: 13px; font-family: 'JetBrains Mono', monospace; padding: 12px; border-radius: 6px; display: none; word-wrap: break-word;}
+        .status-box.active { display: block; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.2); color: #38bdf8; }
+        
+        .history-card { background: #0f172a; border-left: 3px solid #38bdf8; padding: 15px; margin-top: 10px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #cbd5e1; word-wrap: break-word;}
+        .summary-card { background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); padding: 20px; border-radius: 8px; color: #4ade80; font-family: 'JetBrains Mono', monospace; font-size: 13px; word-wrap: break-word; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Chain Of Custody <span>Forensics Ledger</span></h1>
-    
-    <button id="connectBtn">🔒 Connect Investigator Wallet</button>
-    <p id="walletAddress"></p>
+    <h1>Chain Of Custody <span>Ledger</span></h1>
 
-    <div class="card">
-        <h3>A. Initial Evidence Intake</h3>
+    <div id="layer-auth" class="layer active text-center">
+        <p style="margin-bottom: 30px;">Secure law enforcement portal. Authorized wallets only.</p>
+        <button id="connectBtn" style="padding: 18px; font-size: 18px;">🔒 Connect Agency Wallet</button>
+        <div id="authError" style="color: #ef4444; margin-top: 15px; font-size: 14px; display: none;"></div>
+    </div>
+
+    <div id="layer-dashboard" class="layer text-center">
+        <div id="userBadge" class="user-badge">Connected: 0x...</div>
+        <p style="margin-bottom: 25px;">Select an operational path below:</p>
+        
+        <button class="btn-menu" onclick="switchLayer('layer-intake')">
+            <span>A. Log New Evidence Intake</span> <span>➔</span>
+        </button>
+        <button class="btn-menu" onclick="switchLayer('layer-transfer')">
+            <span>B. Transfer / Update Custody</span> <span>➔</span>
+        </button>
+        <button class="btn-menu" onclick="loadHistory()">
+            <span>C. View Activity History</span> <span>➔</span>
+        </button>
+    </div>
+
+    <div id="layer-intake" class="layer">
+        <button class="btn-back" onclick="switchLayer('layer-dashboard')">← Back to Menu</button>
+        <h3>Initial Evidence Intake</h3>
         <p>Uploads file to Walrus Storage and logs initial seizure.</p>
-        <input type="text" id="intakeCaseId" placeholder="Case / Item ID (e.g., Laptop_001)">
-        <input type="text" id="intakeCustodian" placeholder="Seizing Officer Name">
-        <input type="file" id="evidenceFile">
-        <button id="intakeBtn">Upload to Walrus & Log Seizure</button>
-        <div id="intakeStatus" class="status"></div>
+        
+        <input type="text" id="inCaseId" placeholder="Case / Item ID (e.g., Laptop_001)">
+        <input type="text" id="inCustodian" placeholder="Seizing Officer (0x... Wallet Address)">
+        <input type="file" id="inFile">
+        
+        <button id="btnSubmitIntake">Upload to Walrus & Log Seizure</button>
+        <div id="statusIntake" class="status-box"></div>
     </div>
 
-    <div class="card card-transfer">
-        <h3>B. Transfer / Update Custody</h3>
-        <p>Logs a transfer without re-uploading the evidence file.</p>
-        <input type="text" id="transferCaseId" placeholder="Case / Item ID (Must match exactly)">
-        <input type="text" id="transferCustodian" placeholder="Receiving Custodian Name">
-        <input type="text" id="transferAction" placeholder="Action (e.g., Received at Forensics Lab)">
-        <input type="text" id="transferWalrusId" placeholder="Paste existing Walrus Blob ID here">
-        <button id="transferBtn" class="btn-transfer">Sign Custody Transfer on Blockchain</button>
-        <div id="transferStatus" class="status"></div>
+    <div id="layer-transfer" class="layer">
+        <button class="btn-back" onclick="switchLayer('layer-dashboard')">← Back to Menu</button>
+        <h3>Transfer Custody</h3>
+        <p>Logs a transfer directly to the blockchain ledger.</p>
+        
+        <input type="text" id="trCaseId" placeholder="Case / Item ID (Must match exactly)">
+        <input type="text" id="trCustodian" placeholder="Receiving Custodian (0x... Wallet Address)">
+        <input type="text" id="trAction" placeholder="Action (e.g., Received at Forensics Lab)">
+        <input type="text" id="trWalrusId" placeholder="Paste existing Walrus Blob ID here">
+        
+        <button id="btnSubmitTransfer" style="background: linear-gradient(135deg, #d97706, #ea580c);">Sign Transfer on Blockchain</button>
+        <div id="statusTransfer" class="status-box"></div>
     </div>
+
+    <div id="layer-history" class="layer">
+        <button class="btn-back" onclick="switchLayer('layer-dashboard')">← Back to Menu</button>
+        <h3>Your Activity History</h3>
+        <p>Fetching recent records from the Polygon Ledger...</p>
+        <div id="historyContainer"></div>
+    </div>
+
+    <div id="layer-success" class="layer text-center">
+        <h3 style="color: #4ade80; font-size: 24px; margin-bottom: 20px;">✅ Transaction Verified</h3>
+        <div id="successSummary" class="summary-card text-left">
+            </div>
+        <button onclick="switchLayer('layer-dashboard')" style="background: #1e293b; border: 1px solid #475569; margin-top: 30px;">Return to Dashboard</button>
+    </div>
+
 </div>
 
 <script>
     // --- ⚠️ PASTE YOUR REMIX CONTRACT ADDRESS HERE ⚠️ ---
     const contractAddress = "0x0CAa2d65ee8a78cE92421De2102cE52d72b5bc16"; 
 
+    // Upgraded ABI to include reading history arrays
     const contractABI = [
-        {
-            "inputs": [
-                { "internalType": "string", "name": "_caseId", "type": "string" },
-                { "internalType": "string", "name": "_custodian", "type": "string" },
-                { "internalType": "string", "name": "_action", "type": "string" },
-                { "internalType": "string", "name": "_walrusBlobId", "type": "string" }
-            ],
-            "name": "logEvidence",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        }
+        { "inputs": [ { "internalType": "string", "name": "_caseId", "type": "string" }, { "internalType": "string", "name": "_custodian", "type": "string" }, { "internalType": "string", "name": "_action", "type": "string" }, { "internalType": "string", "name": "_walrusBlobId", "type": "string" } ], "name": "logEvidence", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+        { "inputs": [], "name": "getTotalLogs", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "stateMutability": "view", "type": "function" },
+        { "inputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "name": "evidenceLogs", "outputs": [ { "internalType": "string", "name": "caseId", "type": "string" }, { "internalType": "string", "name": "custodian", "type": "string" }, { "internalType": "string", "name": "action", "type": "string" }, { "internalType": "string", "name": "walrusBlobId", "type": "string" }, { "internalType": "uint256", "name": "timestamp", "type": "uint256" } ], "stateMutability": "view", "type": "function" }
     ];
 
-    let provider, signer, contract;
+    let provider, signer, contract, userAddress;
 
-    // --- CONNECT WALLET ---
+    // --- UI NAVIGATION LOGIC ---
+    function switchLayer(layerId) {
+        document.querySelectorAll('.layer').forEach(el => el.classList.remove('active'));
+        document.getElementById(layerId).classList.add('active');
+        
+        // Reset status boxes when navigating
+        document.querySelectorAll('.status-box').forEach(el => { el.classList.remove('active'); el.innerText = ""; });
+    }
+
+    // --- LAYER 1: AUTHENTICATION ---
     document.getElementById('connectBtn').addEventListener('click', async () => {
-        if (window.ethereum) {
+        try {
+            if (!window.ethereum) throw new Error("MetaMask is not installed.");
             provider = new ethers.providers.Web3Provider(window.ethereum);
             await provider.send("eth_requestAccounts", []);
             signer = provider.getSigner();
-            document.getElementById('walletAddress').innerText = "Wallet Connected: " + await signer.getAddress();
+            userAddress = await signer.getAddress();
             contract = new ethers.Contract(contractAddress, contractABI, signer);
-            document.getElementById('connectBtn').innerText = "✅ Wallet Connected";
-        } else {
-            alert("Please install MetaMask!");
+            
+            // Format address for badge (e.g., 0x1234...abcd)
+            const shortAddr = userAddress.substring(0, 6) + "..." + userAddress.substring(userAddress.length - 4);
+            document.getElementById('userBadge').innerText = "Logged in: " + shortAddr;
+            
+            // Auto-fill custodian fields with their own address for convenience
+            document.getElementById('inCustodian').value = userAddress;
+            
+            switchLayer('layer-dashboard');
+        } catch (error) {
+            const errDiv = document.getElementById('authError');
+            errDiv.innerText = "Connection failed: " + error.message;
+            errDiv.style.display = "block";
         }
     });
 
-    // --- FUNCTION A: INITIAL INTAKE (WITH FAIL-SAFE) ---
-    document.getElementById('intakeBtn').addEventListener('click', async () => {
-        const caseId = document.getElementById('intakeCaseId').value;
-        const custodian = document.getElementById('intakeCustodian').value;
-        const fileInput = document.getElementById('evidenceFile');
-        const statusText = document.getElementById('intakeStatus');
+    // --- LAYER 3A: INTAKE EXECUTION ---
+    document.getElementById('btnSubmitIntake').addEventListener('click', async () => {
+        const caseId = document.getElementById('inCaseId').value;
+        const custodian = document.getElementById('inCustodian').value;
+        const fileInput = document.getElementById('inFile');
+        const statusText = document.getElementById('statusIntake');
 
-        if (!caseId || !custodian || fileInput.files.length === 0) return alert("Fill all fields and attach a file!");
+        if (!caseId || !custodian || fileInput.files.length === 0) return alert("Fill all fields!");
 
         try {
-            statusText.className = "status active";
-            statusText.innerText = "> 1/2: Attempting to secure file on Walrus Storage...";
+            statusText.classList.add('active');
+            statusText.innerText = "> 1/2: Securing file to Walrus Storage...";
             
             let blobId = "";
             const file = fileInput.files[0];
 
             try {
-                // Try to hit the Walrus Testnet
-                const walrusResponse = await fetch("https://publisher.walrus-testnet.walrus.space/v1/store?epochs=5", { 
-                    method: "PUT", 
-                    body: file 
-                });
+                const walrusResponse = await fetch("https://publisher.walrus-testnet.walrus.space/v1/store?epochs=5", { method: "PUT", body: file });
                 const walrusData = await walrusResponse.json();
                 blobId = walrusData.alreadyCertified ? walrusData.alreadyCertified.blobId : walrusData.newlyCreated.blobObject.blobId;
-                statusText.innerText = `> 2/2: Secured on Walrus (ID: ${blobId}). Signing ledger on Polygon...`;
-            } catch (walrusError) {
-                // FAIL-SAFE: If Walrus is dead (ERR_CONNECTION_CLOSED), generate a local fallback ID
-                console.warn("Walrus Testnet offline. Using fail-safe local hash.");
+                statusText.innerText = `> 2/2: Walrus ID: ${blobId}. Requesting Blockchain Signature...`;
+            } catch (e) {
                 blobId = "fallback_hash_" + Math.random().toString(36).substring(2, 15);
-                statusText.innerText = `> WALRUS OFFLINE. Using Fail-Safe ID: ${blobId}. Signing ledger on Polygon...`;
+                statusText.innerText = `> WALRUS OFFLINE. Using Fail-Safe ID: ${blobId}. Requesting Signature...`;
             }
 
-            // Send whatever ID we got to your custom Smart Contract
             const tx = await contract.logEvidence(caseId, custodian, "Initial Seizure", blobId);
+            statusText.innerText = "> Transaction pending on Polygon...";
             await tx.wait();
             
-            statusText.className = "status success";
-            statusText.innerText = `> SUCCESS: Evidence logged.\n> BLOB ID: ${blobId}\n> Save this ID for future transfers.`;
+            showSuccessSummary("Intake", caseId, custodian, "Initial Seizure", blobId, tx.hash);
         } catch (error) {
-            statusText.className = "status error";
             statusText.innerText = "> ERROR: " + error.message;
         }
     });
 
-    // --- FUNCTION B: TRANSFER CUSTODY ---
-    document.getElementById('transferBtn').addEventListener('click', async () => {
-        const caseId = document.getElementById('transferCaseId').value;
-        const newCustodian = document.getElementById('transferCustodian').value;
-        const action = document.getElementById('transferAction').value;
-        const blobId = document.getElementById('transferWalrusId').value;
-        const statusText = document.getElementById('transferStatus');
+    // --- LAYER 3B: TRANSFER EXECUTION ---
+    document.getElementById('btnSubmitTransfer').addEventListener('click', async () => {
+        const caseId = document.getElementById('trCaseId').value;
+        const custodian = document.getElementById('trCustodian').value;
+        const action = document.getElementById('trAction').value;
+        const blobId = document.getElementById('trWalrusId').value;
+        const statusText = document.getElementById('statusTransfer');
 
-        if (!caseId || !newCustodian || !action || !blobId) return alert("Fill all fields to complete transfer!");
+        if (!caseId || !custodian || !action || !blobId) return alert("Fill all fields!");
 
         try {
-            statusText.className = "status active";
-            statusText.innerText = "> Requesting blockchain signature from MetaMask...";
+            statusText.classList.add('active');
+            statusText.innerText = "> Requesting Blockchain Signature...";
 
-            const tx = await contract.logEvidence(caseId, newCustodian, action, blobId);
-            
-            statusText.innerText = "> Transaction pending on Polygon Amoy network...";
+            const tx = await contract.logEvidence(caseId, custodian, action, blobId);
+            statusText.innerText = "> Transaction pending on Polygon...";
             await tx.wait();
             
-            statusText.className = "status success";
-            statusText.innerText = "> SUCCESS: Custody transfer permanently logged to the Chain of Custody.";
+            showSuccessSummary("Transfer", caseId, custodian, action, blobId, tx.hash);
         } catch (error) {
-            statusText.className = "status error";
             statusText.innerText = "> ERROR: " + error.message;
         }
     });
+
+    // --- LAYER 3C: FETCH HISTORY ---
+    async function loadHistory() {
+        switchLayer('layer-history');
+        const container = document.getElementById('historyContainer');
+        container.innerHTML = "<i>Reading ledger...</i>";
+        
+        try {
+            const totalLogs = await contract.getTotalLogs();
+            if (totalLogs == 0) {
+                container.innerHTML = "<p>No activity found on the ledger.</p>";
+                return;
+            }
+
+            let historyHTML = "";
+            // Loop backwards to show newest first (max 10 for performance)
+            let limit = totalLogs > 10 ? totalLogs - 10 : 0;
+            
+            for (let i = totalLogs - 1; i >= limit; i--) {
+                const log = await contract.evidenceLogs(i);
+                // Convert blockchain timestamp to readable date
+                const date = new Date(log.timestamp * 1000).toLocaleString();
+                
+                historyHTML += `
+                    <div class="history-card">
+                        <span style="color:#f8fafc;">Case:</span> ${log.caseId}<br>
+                        <span style="color:#f8fafc;">Action:</span> ${log.action}<br>
+                        <span style="color:#f8fafc;">Custodian:</span> ${log.custodian.substring(0,8)}...<br>
+                        <span style="color:#f8fafc;">Date:</span> ${date}
+                    </div>
+                `;
+            }
+            container.innerHTML = historyHTML;
+        } catch (error) {
+            container.innerHTML = `<span style="color:red;">Failed to read ledger. Ensure your wallet is authorized.</span>`;
+        }
+    }
+
+    // --- LAYER 4: POPULATE SUCCESS SCREEN ---
+    function showSuccessSummary(type, caseId, custodian, action, blobId, txHash) {
+        const summaryDiv = document.getElementById('successSummary');
+        summaryDiv.innerHTML = `
+            <strong>Operation:</strong> ${type}<br><br>
+            <strong>Case ID:</strong> ${caseId}<br>
+            <strong>Custodian:</strong> ${custodian}<br>
+            <strong>Action:</strong> ${action}<br><br>
+            <strong>Walrus ID:</strong> <br><span style="color:#f8fafc; font-size:11px;">${blobId}</span><br><br>
+            <strong>Polygon Tx Hash:</strong> <br><span style="color:#38bdf8; font-size:11px;">${txHash}</span>
+        `;
+        switchLayer('layer-success');
+    }
 </script>
 </body>
 </html>
-
 
 
 
