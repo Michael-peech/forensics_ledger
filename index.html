@@ -3,39 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CYB 305: Chain of Custody Portal</title>
+    <title>Chain of Custody V4</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400&display=swap');
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0f172a, #1e293b);
-            color: #e2e8f0;
-            padding: 40px 20px;
-            margin: 0;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .container {
-            max-width: 650px;
-            width: 100%;
-            background: rgba(30, 41, 59, 0.7);
-            padding: 40px;
-            border-radius: 16px;
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
-            backdrop-filter: blur(12px);
-            border: 1px solid #334155;
-            position: relative;
-        }
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #0f172a, #1e293b); color: #e2e8f0; padding: 40px 20px; margin: 0; min-height: 100vh; display: flex; justify-content: center; align-items: center; }
+        .container { max-width: 650px; width: 100%; background: rgba(30, 41, 59, 0.8); padding: 35px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); backdrop-filter: blur(12px); border: 1px solid #334155; position: relative; }
         
         .layer { display: none; animation: fadeIn 0.4s ease-in-out; }
         .layer.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        h1 { color: #f8fafc; font-weight: 800; font-size: 26px; text-align: center; margin-bottom: 30px; }
+        h1 { color: #f8fafc; font-weight: 800; font-size: 26px; text-align: center; margin-bottom: 25px; }
         h1 span { background: -webkit-linear-gradient(45deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         h3 { color: #f1f5f9; margin-bottom: 5px; font-weight: 600; }
         p { color: #94a3b8; font-size: 14px; margin-top: 0; }
@@ -43,24 +23,38 @@
         .user-badge { background: #0f172a; border: 1px solid #38bdf8; color: #38bdf8; padding: 8px 15px; border-radius: 20px; font-family: 'JetBrains Mono', monospace; font-size: 12px; display: inline-block; margin-bottom: 25px; }
         .text-center { text-align: center; }
 
-        input { width: 100%; padding: 14px; margin-top: 12px; background: #0f172a; border: 1px solid #334155; color: #f8fafc; border-radius: 8px; box-sizing: border-box; font-family: 'Inter', sans-serif; transition: 0.2s; }
-        input:focus { outline: none; border-color: #38bdf8; box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1); }
+        input, select, textarea { width: 100%; padding: 14px; margin-top: 12px; background: #0f172a; border: 1px solid #334155; color: #f8fafc; border-radius: 8px; box-sizing: border-box; font-family: 'Inter', sans-serif; transition: 0.2s; appearance: none; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #38bdf8; box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1); }
+        textarea { resize: vertical; min-height: 100px; }
         input[type="file"] { padding: 10px; background: #1e293b; color: #94a3b8; cursor: pointer; }
         input[type="file"]::-webkit-file-upload-button { background: #334155; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; margin-right: 10px; font-weight: 600; }
 
         button { width: 100%; padding: 14px; margin-top: 15px; background: linear-gradient(135deg, #0284c7, #2563eb); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer; transition: all 0.2s ease; }
         button:hover { transform: translateY(-1px); filter: brightness(1.1); }
         
-        .btn-menu { background: #1e293b; border: 1px solid #475569; text-align: left; padding: 20px; font-size: 16px; display: flex; justify-content: space-between; align-items: center; }
+        .btn-menu { background: #1e293b; border: 1px solid #475569; text-align: left; padding: 18px; font-size: 15px; display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
         .btn-menu:hover { background: #334155; border-color: #38bdf8; }
         .btn-back { background: transparent; border: 1px solid #475569; color: #94a3b8; margin-bottom: 20px; width: auto; padding: 8px 16px; font-size: 13px; }
         .btn-back:hover { background: #334155; color: white; }
 
         .status-box { margin-top: 15px; font-size: 13px; font-family: 'JetBrains Mono', monospace; padding: 12px; border-radius: 6px; display: none; word-wrap: break-word;}
         .status-box.active { display: block; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.2); color: #38bdf8; }
+        .status-box.error { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.2); color: #f87171; }
         
         .history-card { background: #0f172a; border-left: 3px solid #38bdf8; padding: 15px; margin-top: 10px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #cbd5e1; word-wrap: break-word;}
-        .summary-card { background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); padding: 20px; border-radius: 8px; color: #4ade80; font-family: 'JetBrains Mono', monospace; font-size: 13px; word-wrap: break-word; }
+        
+        /* EVIDENCE LOCKER GRID UI */
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; margin-top: 20px; }
+        .grid-item { background: #1e293b; border: 1px solid #475569; border-radius: 10px; padding: 15px; text-align: center; cursor: pointer; transition: 0.2s; }
+        .grid-item:hover { border-color: #38bdf8; transform: translateY(-3px); }
+        .animated-file { font-size: 40px; margin-bottom: 10px; display: inline-block; animation: float 3s ease-in-out infinite; }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-5px); } 100% { transform: translateY(0px); } }
+        .item-label { font-size: 12px; color: #f8fafc; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .case-label { font-size: 10px; color: #94a3b8; }
+        
+        /* HELP GUIDE UI */
+        .help-section { background: #0f172a; padding: 15px; border-radius: 8px; margin-top: 15px; font-size: 13px; border-left: 3px solid #818cf8;}
+        .help-section h4 { color: #818cf8; margin: 0 0 5px 0; }
     </style>
 </head>
 <body>
@@ -76,25 +70,33 @@
 
     <div id="layer-dashboard" class="layer text-center">
         <div id="userBadge" class="user-badge">Connected: 0x...</div>
-        <p style="margin-bottom: 25px;">Select an operational path below:</p>
         
         <button class="btn-menu" onclick="switchLayer('layer-intake')">
-            <span>A. Log Initial Evidence Seizure</span> <span>➔</span>
+            <span>A. Log Initial Evidence</span> <span>➔</span>
         </button>
         <button class="btn-menu" onclick="switchLayer('layer-transfer')">
-            <span>B. Transfer Custody to Officer/Lab</span> <span>➔</span>
+            <span>B. Transfer Custody</span> <span>➔</span>
         </button>
         <button class="btn-menu" onclick="loadHistory()">
-            <span>C. View Chain of Custody History</span> <span>➔</span>
+            <span>C. View Global History</span> <span>➔</span>
         </button>
+        <button class="btn-menu" onclick="loadLocker()" style="border-left: 4px solid #4ade80;">
+            <span>D. My Evidence Locker</span> <span>➔</span>
+        </button>
+        <button class="btn-menu" onclick="switchLayer('layer-help')" style="border-left: 4px solid #818cf8;">
+            <span>E. Help & User Guide</span> <span>➔</span>
+        </button>
+        
+        <button onclick="logout()" style="background: transparent; border: 1px solid #ef4444; color: #ef4444; margin-top: 25px;">🔒 Disconnect</button>
     </div>
 
     <div id="layer-intake" class="layer">
         <button class="btn-back" onclick="switchLayer('layer-dashboard')">← Back to Menu</button>
-        <h3>Initial Evidence Intake</h3>
-        <p>Logs seizure. Your wallet is automatically assigned as custodian.</p>
+        <h3>Log Initial Evidence</h3>
+        <p>Your wallet is automatically assigned as the initial custodian.</p>
         
-        <input type="text" id="inCaseId" placeholder="Case / Item ID (e.g., Laptop_001)">
+        <input type="text" id="inCaseName" placeholder="Case Name (e.g., The Bank Robbery)">
+        <input type="text" id="inItemId" placeholder="Item ID (e.g., Laptop_001)">
         <input type="file" id="inFile">
         
         <button id="btnSubmitIntake">Upload to Walrus & Lock Seizure</button>
@@ -104,56 +106,106 @@
     <div id="layer-transfer" class="layer">
         <button class="btn-back" onclick="switchLayer('layer-dashboard')">← Back to Menu</button>
         <h3>Transfer Custody</h3>
-        <p>Only the CURRENT custodian can initiate a transfer.</p>
+        <p>Cryptographically verify and hand off evidence.</p>
         
-        <input type="text" id="trCaseId" placeholder="Case / Item ID (Must match exactly)">
+        <input type="text" id="trItemId" placeholder="Search by Item ID (e.g., Laptop_001)">
+        <input type="text" id="trWalrusId" placeholder="Verify: Paste exact Walrus Blob ID here">
         <input type="text" id="trCustodian" placeholder="Receiving Officer (0x... Wallet Address)">
-        <input type="text" id="trAction" placeholder="Action (e.g., Relinquished to Forensics Lab)">
-        <input type="text" id="trWalrusId" placeholder="Paste existing Walrus Blob ID here">
         
-        <button id="btnSubmitTransfer" style="background: linear-gradient(135deg, #d97706, #ea580c);">Sign Transfer on Blockchain</button>
+        <select id="trAction">
+            <option value="" disabled selected>Select an Authorized Action...</option>
+            <option value="Transferred to Secure Storage">Transferred to Secure Storage</option>
+            <option value="Checked out for Forensic Imaging">Checked out for Forensic Imaging</option>
+            <option value="Checked out for Data Analysis">Checked out for Data Analysis</option>
+            <option value="Transferred for Legal Review">Transferred for Legal Review</option>
+            <option value="Case Closed / Returned to Owner">Case Closed / Returned to Owner</option>
+        </select>
+        
+        <button id="btnSubmitTransfer" style="background: linear-gradient(135deg, #d97706, #ea580c);">Verify & Sign Transfer</button>
         <div id="statusTransfer" class="status-box"></div>
     </div>
 
     <div id="layer-history" class="layer">
         <button class="btn-back" onclick="switchLayer('layer-dashboard')">← Back to Menu</button>
-        <h3>Chain of Custody History</h3>
-        <p>Fetching immutable state records from Polygon...</p>
+        <h3>Global Custody History</h3>
         <div id="historyContainer"></div>
     </div>
 
-    <div id="layer-success" class="layer text-center">
-        <h3 style="color: #4ade80; font-size: 24px; margin-bottom: 20px;">✅ Block Confirmed</h3>
-        <div id="successSummary" class="summary-card text-left">
-            </div>
-        <button onclick="switchLayer('layer-dashboard')" style="background: #1e293b; border: 1px solid #475569; margin-top: 30px;">Return to Dashboard</button>
+    <div id="layer-locker" class="layer">
+        <button class="btn-back" onclick="switchLayer('layer-dashboard')">← Back to Menu</button>
+        <h3>My Evidence Locker</h3>
+        <p>Items currently secured under your wallet address.</p>
+        <div id="lockerGrid" class="grid-container"></div>
+    </div>
+
+    <div id="layer-lab" class="layer">
+        <button class="btn-back" onclick="switchLayer('layer-locker')">← Back to Locker</button>
+        <h3>Forensic Analysis Panel</h3>
+        <p id="labItemLabel" style="color: #38bdf8; font-family: monospace;"></p>
+        
+        <div id="labStatusAlert" style="color: #f59e0b; font-size: 13px; margin-bottom: 15px;"></div>
+        
+        <textarea id="labAnalysis" placeholder="ANALYSIS: Detail what was added, modified, or destroyed on this evidence..."></textarea>
+        <textarea id="labEvaluation" placeholder="EVALUATION: Narrative deduction of how the crime occurred based on analysis..."></textarea>
+        
+        <button id="btnSubmitLab" style="background: #10b981;">Save Lab Reports to Ledger</button>
+        <div id="statusLab" class="status-box"></div>
+    </div>
+
+    <div id="layer-help" class="layer">
+        <button class="btn-back" onclick="switchLayer('layer-dashboard')">← Back to Menu</button>
+        <h3>System User Guide</h3>
+        
+        <div class="help-section">
+            <h4>A. Log Initial Evidence</h4>
+            <p>Used strictly at the crime scene. Fills both Case Name and unique Item ID. Accepts any file format (PDF, JPG, RAW disk images). You become the Custodian.</p>
+        </div>
+        <div class="help-section">
+            <h4>B. Transfer Custody</h4>
+            <p>To transfer, you must input the exact Item ID. **Security Feature:** You must also paste the correct Walrus ID. If you paste the wrong ID, the system blocks the transfer to prevent evidence tampering.</p>
+        </div>
+        <div class="help-section">
+            <h4>D. Evidence Locker & Lab Reports</h4>
+            <p>Shows items you hold. If you are a Lab Tech (i.e., the item was transferred to you using the "Checked out for Data Analysis" action), the system will unlock the restricted Analysis and Evaluation writing scripts for you.</p>
+        </div>
     </div>
 
 </div>
 
 <script>
-    // --- ⚠️ PASTE YOUR NEW V3 REMIX CONTRACT ADDRESS HERE ⚠️ ---
-    const contractAddress = "0x0CAa2d65ee8a78cE92421De2102cE52d72b5bc16"; 
+    // --- ⚠️ PASTE YOUR V4 REMIX CONTRACT ADDRESS HERE ⚠️ ---
+    const contractAddress = "YOUR_REMIX_CONTRACT_ADDRESS_HERE"; 
 
-    // Upgraded ABI strictly for the V3 Contract
     const contractABI = [
-      { "inputs": [ { "internalType": "string", "name": "_caseId", "type": "string" }, { "internalType": "string", "name": "_walrusBlobId", "type": "string" } ], "name": "logInitialSeizure", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
-      { "inputs": [ { "internalType": "string", "name": "_caseId", "type": "string" }, { "internalType": "address", "name": "_newCustodian", "type": "address" }, { "internalType": "string", "name": "_action", "type": "string" }, { "internalType": "string", "name": "_walrusBlobId", "type": "string" } ], "name": "transferCustody", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+      { "inputs": [ { "internalType": "string", "name": "_caseName", "type": "string" }, { "internalType": "string", "name": "_itemId", "type": "string" }, { "internalType": "string", "name": "_walrusBlobId", "type": "string" } ], "name": "logInitialSeizure", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+      { "inputs": [ { "internalType": "string", "name": "_itemId", "type": "string" }, { "internalType": "address", "name": "_newCustodian", "type": "address" }, { "internalType": "string", "name": "_action", "type": "string" } ], "name": "transferCustody", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+      { "inputs": [ { "internalType": "string", "name": "_itemId", "type": "string" }, { "internalType": "string", "name": "_analysis", "type": "string" }, { "internalType": "string", "name": "_evaluation", "type": "string" } ], "name": "submitLabReport", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
       { "inputs": [], "name": "getTotalLogs", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "stateMutability": "view", "type": "function" },
-      { "inputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "name": "evidenceHistory", "outputs": [ { "internalType": "string", "name": "caseId", "type": "string" }, { "internalType": "address", "name": "from", "type": "address" }, { "internalType": "address", "name": "to", "type": "address" }, { "internalType": "string", "name": "action", "type": "string" }, { "internalType": "string", "name": "walrusBlobId", "type": "string" }, { "internalType": "uint256", "name": "timestamp", "type": "uint256" } ], "stateMutability": "view", "type": "function" }
+      { "inputs": [], "name": "getTotalItems", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "stateMutability": "view", "type": "function" },
+      { "inputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "name": "allItemIds", "outputs": [ { "internalType": "string", "name": "", "type": "string" } ], "stateMutability": "view", "type": "function" },
+      { "inputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "name": "evidenceHistory", "outputs": [ { "internalType": "string", "name": "itemId", "type": "string" }, { "internalType": "address", "name": "from", "type": "address" }, { "internalType": "address", "name": "to", "type": "address" }, { "internalType": "string", "name": "action", "type": "string" }, { "internalType": "uint256", "name": "timestamp", "type": "uint256" } ], "stateMutability": "view", "type": "function" },
+      { "inputs": [ { "internalType": "string", "name": "", "type": "string" } ], "name": "currentCustodian", "outputs": [ { "internalType": "address", "name": "", "type": "address" } ], "stateMutability": "view", "type": "function" },
+      { "inputs": [ { "internalType": "string", "name": "", "type": "string" } ], "name": "evidenceRegistry", "outputs": [ { "internalType": "string", "name": "caseName", "type": "string" }, { "internalType": "string", "name": "itemId", "type": "string" }, { "internalType": "string", "name": "walrusBlobId", "type": "string" }, { "internalType": "string", "name": "analysisReport", "type": "string" }, { "internalType": "string", "name": "evaluationReport", "type": "string" } ], "stateMutability": "view", "type": "function" }
     ];
 
-    let provider, signer, contract, userAddress;
+    let provider, signer, contract, userAddress, currentActiveItemForLab = "";
 
     function switchLayer(layerId) {
         document.querySelectorAll('.layer').forEach(el => el.classList.remove('active'));
         document.getElementById(layerId).classList.add('active');
-        document.querySelectorAll('.status-box').forEach(el => { el.classList.remove('active'); el.innerText = ""; });
+        document.querySelectorAll('.status-box').forEach(el => { el.classList.remove('active', 'error'); el.innerText = ""; });
+    }
+
+    function logout() {
+        provider = null; signer = null; contract = null; userAddress = null;
+        document.getElementById('userBadge').innerText = "Connected: 0x...";
+        switchLayer('layer-auth');
     }
 
     document.getElementById('connectBtn').addEventListener('click', async () => {
         try {
-            if (!window.ethereum) throw new Error("MetaMask is not installed.");
+            if (!window.ethereum) throw new Error("MetaMask not installed.");
+            await window.ethereum.request({ method: "wallet_requestPermissions", params: [{ eth_accounts: {} }] });
             provider = new ethers.providers.Web3Provider(window.ethereum);
             await provider.send("eth_requestAccounts", []);
             signer = provider.getSigner();
@@ -164,74 +216,77 @@
             document.getElementById('userBadge').innerText = "Logged in: " + shortAddr;
             switchLayer('layer-dashboard');
         } catch (error) {
-            const errDiv = document.getElementById('authError');
-            errDiv.innerText = "Connection failed: " + error.message;
-            errDiv.style.display = "block";
+            document.getElementById('authError').innerText = "Connection failed.";
+            document.getElementById('authError').style.display = "block";
         }
     });
 
-    // --- FUNCTION A: V3 INTAKE ---
+    if (window.ethereum) { window.ethereum.on('accountsChanged', () => logout()); }
+
+    // --- MODULE A: INTAKE ---
     document.getElementById('btnSubmitIntake').addEventListener('click', async () => {
-        const caseId = document.getElementById('inCaseId').value;
+        const caseName = document.getElementById('inCaseName').value;
+        const itemId = document.getElementById('inItemId').value;
         const fileInput = document.getElementById('inFile');
         const statusText = document.getElementById('statusIntake');
 
-        if (!caseId || fileInput.files.length === 0) return alert("Fill all fields!");
+        if (!caseName || !itemId || fileInput.files.length === 0) return alert("Fill all fields!");
 
         try {
-            statusText.classList.add('active');
-            statusText.innerText = "> 1/2: Securing file to Walrus Storage...";
+            statusText.className = "status-box active";
+            statusText.innerText = "> Securing file...";
             
-            let blobId = "";
-            const file = fileInput.files[0];
-
+            let blobId = "fallback_hash_" + Math.random().toString(36).substring(2, 15);
             try {
-                const walrusResponse = await fetch("https://publisher.walrus-testnet.walrus.space/v1/store?epochs=5", { method: "PUT", body: file });
+                const walrusResponse = await fetch("https://publisher.walrus-testnet.walrus.space/v1/store?epochs=5", { method: "PUT", body: fileInput.files[0] });
                 const walrusData = await walrusResponse.json();
                 blobId = walrusData.alreadyCertified ? walrusData.alreadyCertified.blobId : walrusData.newlyCreated.blobObject.blobId;
-                statusText.innerText = `> 2/2: Walrus ID: ${blobId}. Requesting Blockchain Signature...`;
-            } catch (e) {
-                blobId = "fallback_hash_" + Math.random().toString(36).substring(2, 15);
-                statusText.innerText = `> WALRUS OFFLINE. Using Fail-Safe ID: ${blobId}. Requesting Signature...`;
-            }
+            } catch (e) { console.warn("Using fail-safe ID."); }
 
-            // Calls the new V3 logInitialSeizure function
-            const tx = await contract.logInitialSeizure(caseId, blobId);
-            statusText.innerText = "> Transaction pending on Polygon...";
+            statusText.innerText = "> Signing Polygon Ledger...";
+            const tx = await contract.logInitialSeizure(caseName, itemId, blobId);
             await tx.wait();
             
-            showSuccessSummary("Initial Seizure", caseId, "Auto-Assigned to You", "Seized & Secured", blobId, tx.hash);
+            alert(`SUCCESS! Item Logged.\nWalrus ID (Save this): ${blobId}`);
+            switchLayer('layer-dashboard');
         } catch (error) {
+            statusText.className = "status-box active error";
             statusText.innerText = "> ERROR: " + error.message;
         }
     });
 
-    // --- FUNCTION B: V3 TRANSFER ---
+    // --- MODULE B: TRANSFER (WITH VERIFICATION) ---
     document.getElementById('btnSubmitTransfer').addEventListener('click', async () => {
-        const caseId = document.getElementById('trCaseId').value;
+        const itemId = document.getElementById('trItemId').value;
+        const walrusId = document.getElementById('trWalrusId').value;
         const newCustodian = document.getElementById('trCustodian').value;
         const action = document.getElementById('trAction').value;
-        const blobId = document.getElementById('trWalrusId').value;
         const statusText = document.getElementById('statusTransfer');
 
-        if (!caseId || !newCustodian || !action || !blobId) return alert("Fill all fields!");
+        if (!itemId || !walrusId || !newCustodian || !action) return alert("Fill all fields!");
 
         try {
-            statusText.classList.add('active');
-            statusText.innerText = "> Requesting Blockchain Signature...";
+            statusText.className = "status-box active";
+            statusText.innerText = "> Verifying Evidence Integrity...";
 
-            // Calls the new V3 transferCustody function
-            const tx = await contract.transferCustody(caseId, newCustodian, action, blobId);
-            statusText.innerText = "> Transaction pending on Polygon...";
+            // FRONTEND VERIFICATION LOGIC
+            const registryData = await contract.evidenceRegistry(itemId);
+            if (registryData.walrusBlobId === "") throw new Error("Item ID not found on blockchain.");
+            if (registryData.walrusBlobId !== walrusId) throw new Error("VERIFICATION FAILED: The Walrus ID provided does not match the actual file stored for this Evidence.");
+
+            statusText.innerText = "> Integrity Confirmed. Requesting Signature...";
+            const tx = await contract.transferCustody(itemId, newCustodian, action);
             await tx.wait();
             
-            showSuccessSummary("Custody Transfer", caseId, newCustodian, action, blobId, tx.hash);
+            alert("SUCCESS: Custody Transferred!");
+            switchLayer('layer-dashboard');
         } catch (error) {
-            statusText.innerText = "> ERROR: " + error.message;
+            statusText.className = "status-box active error";
+            statusText.innerText = "> " + error.message;
         }
     });
 
-    // --- FUNCTION C: V3 FETCH HISTORY ---
+    // --- MODULE C: HISTORY ---
     async function loadHistory() {
         switchLayer('layer-history');
         const container = document.getElementById('historyContainer');
@@ -239,50 +294,121 @@
         
         try {
             const totalLogs = await contract.getTotalLogs();
-            if (totalLogs == 0) {
-                container.innerHTML = "<p>No activity found on the ledger.</p>";
-                return;
-            }
+            if (totalLogs == 0) return container.innerHTML = "<p>No activity found.</p>";
 
             let historyHTML = "";
-            let limit = totalLogs > 10 ? totalLogs - 10 : 0;
+            let limit = totalLogs > 15 ? totalLogs - 15 : 0;
             
             for (let i = totalLogs - 1; i >= limit; i--) {
                 const log = await contract.evidenceHistory(i);
                 const date = new Date(log.timestamp * 1000).toLocaleString();
-                
-                // Formats the From/To addresses, noting if it was the initial seizure
-                const fromText = log.from === "0x0000000000000000000000000000000000000000" ? "[Initial Seizure]" : log.from.substring(0,6) + "..." + log.from.substring(38);
-                const toText = log.to.substring(0,6) + "..." + log.to.substring(38);
+                const fromText = log.from === "0x0000000000000000000000000000000000000000" ? "[Initial Seizure]" : log.from.substring(0,6) + "...";
+                const toText = log.to.substring(0,6) + "...";
 
                 historyHTML += `
                     <div class="history-card">
-                        <span style="color:#f8fafc;">Case:</span> ${log.caseId}<br>
+                        <span style="color:#f8fafc;">Item:</span> ${log.itemId}<br>
                         <span style="color:#f8fafc;">Action:</span> ${log.action}<br>
-                        <span style="color:#f8fafc;">From:</span> <span style="color:#ef4444">${fromText}</span><br>
-                        <span style="color:#f8fafc;">To:</span> <span style="color:#4ade80">${toText}</span><br>
+                        <span style="color:#f8fafc;">Routing:</span> <span style="color:#ef4444">${fromText}</span> ➔ <span style="color:#4ade80">${toText}</span><br>
                         <span style="color:#f8fafc;">Date:</span> ${date}
-                    </div>
-                `;
+                    </div>`;
             }
             container.innerHTML = historyHTML;
-        } catch (error) {
-            container.innerHTML = `<span style="color:red;">Failed to read ledger. Ensure your wallet is authorized.</span>`;
+        } catch (e) { container.innerHTML = `<span style="color:red;">Failed to read ledger.</span>`; }
+    }
+
+    // --- MODULE D: EVIDENCE LOCKER ---
+    async function loadLocker() {
+        switchLayer('layer-locker');
+        const grid = document.getElementById('lockerGrid');
+        grid.innerHTML = "<p>Scanning vaults...</p>";
+
+        try {
+            const totalItems = await contract.getTotalItems();
+            let html = "";
+            
+            for(let i=0; i < totalItems; i++) {
+                const itemId = await contract.allItemIds(i);
+                const custodian = await contract.currentCustodian(itemId);
+                
+                // Only show items YOU hold
+                if(custodian.toLowerCase() === userAddress.toLowerCase()) {
+                    const registry = await contract.evidenceRegistry(itemId);
+                    html += `
+                        <div class="grid-item" onclick="openLabPanel('${itemId}')">
+                            <span class="animated-file">📁</span><br>
+                            <div class="item-label">${itemId}</div>
+                            <div class="case-label">${registry.caseName}</div>
+                        </div>`;
+                }
+            }
+            grid.innerHTML = html === "" ? "<p>Your locker is empty.</p>" : html;
+        } catch (e) { grid.innerHTML = "<p>Error loading locker.</p>"; }
+    }
+
+    // --- MODULE D-2: LAB TECH SCRIPTS ---
+    async function openLabPanel(itemId) {
+        switchLayer('layer-lab');
+        currentActiveItemForLab = itemId;
+        document.getElementById('labItemLabel').innerText = "Active Item: " + itemId;
+        
+        document.getElementById('labAnalysis').value = "Loading...";
+        document.getElementById('labEvaluation').value = "Loading...";
+        document.getElementById('btnSubmitLab').style.display = "none";
+        document.getElementById('labStatusAlert').innerText = "Checking lab clearance...";
+
+        // Fetch registry for existing reports
+        const registry = await contract.evidenceRegistry(itemId);
+        document.getElementById('labAnalysis').value = registry.analysisReport;
+        document.getElementById('labEvaluation').value = registry.evaluationReport;
+
+        // Fetch history to find the LAST action performed on this item to verify Lab Tech status
+        let isLabTech = false;
+        const totalLogs = await contract.getTotalLogs();
+        for (let i = totalLogs - 1; i >= 0; i--) {
+            const log = await contract.evidenceHistory(i);
+            if (log.itemId === itemId) {
+                if (log.action === "Checked out for Forensic Imaging" || log.action === "Checked out for Data Analysis") {
+                    isLabTech = true;
+                }
+                break; // Found the most recent action for this item, stop looking
+            }
+        }
+
+        if (isLabTech) {
+            document.getElementById('labStatusAlert').innerHTML = "✅ <b>Clearance Granted:</b> You are authorized to modify lab scripts.";
+            document.getElementById('btnSubmitLab').style.display = "block";
+            document.getElementById('labAnalysis').readOnly = false;
+            document.getElementById('labEvaluation').readOnly = false;
+        } else {
+            document.getElementById('labStatusAlert').innerHTML = "🚫 <b>View Only:</b> This item was not checked out for forensic analysis.";
+            document.getElementById('labAnalysis').readOnly = true;
+            document.getElementById('labEvaluation').readOnly = true;
         }
     }
 
-    function showSuccessSummary(type, caseId, toAddress, action, blobId, txHash) {
-        const summaryDiv = document.getElementById('successSummary');
-        summaryDiv.innerHTML = `
-            <strong>Operation:</strong> ${type}<br><br>
-            <strong>Case ID:</strong> ${caseId}<br>
-            <strong>Handed To:</strong> ${toAddress}<br>
-            <strong>Action:</strong> ${action}<br><br>
-            <strong>Walrus ID:</strong> <br><span style="color:#f8fafc; font-size:11px;">${blobId}</span><br><br>
-            <strong>Polygon Tx Hash:</strong> <br><span style="color:#38bdf8; font-size:11px;">${txHash}</span>
-        `;
-        switchLayer('layer-success');
-    }
+    document.getElementById('btnSubmitLab').addEventListener('click', async () => {
+        const analysis = document.getElementById('labAnalysis').value;
+        const evalText = document.getElementById('labEvaluation').value;
+        const statusText = document.getElementById('statusLab');
+
+        try {
+            statusText.className = "status-box active";
+            statusText.innerText = "> Writing reports to blockchain...";
+            
+            const tx = await contract.submitLabReport(currentActiveItemForLab, analysis, evalText);
+            await tx.wait();
+            
+            statusText.className = "status-box active";
+            statusText.style.color = "#10b981";
+            statusText.style.borderColor = "#10b981";
+            statusText.innerText = "✅ SUCCESS: Reports permanently recorded!";
+        } catch (error) {
+            statusText.className = "status-box active error";
+            statusText.innerText = "> ERROR: " + error.message;
+        }
+    });
+
 </script>
 </body>
 </html>
