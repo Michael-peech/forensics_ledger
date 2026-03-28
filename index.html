@@ -127,7 +127,7 @@
 <body>
 
 <div class="container">
-    <h1>CYB-305 <span>Ledger</span></h1>
+    <h1>Chain Of Custody <span>Forensics Ledger</span></h1>
 
     <div id="layer-auth" class="layer active text-center">
         <p style="margin-bottom: 35px;">Initiate secure handshake to access forensics mainframe.</p>
@@ -217,11 +217,14 @@
 
     function getAlias(address) {
         if (!address || address === "0x0000000000000000000000000000000000000000") return { name: "Origin Node", initials: "ON" };
-        const seed = parseInt(address.substring(2, 10), 16);
-        const animIdx = seed % animals.length;
-        const locIdx = (seed >> 4) % locations.length; 
-        const animal = animals[animIdx];
-        const loc = locations[locIdx];
+        
+        // THE FIX: We split the address into two separate, safe numbers
+        const animSeed = parseInt(address.substring(2, 8), 16);
+        const locSeed = parseInt(address.substring(8, 14), 16); 
+        
+        const animal = animals[animSeed % animals.length];
+        const loc = locations[locSeed % locations.length];
+        
         return { name: `Agent ${animal} of ${loc}`, initials: `${animal.charAt(0)}${loc.charAt(0)}` };
     }
 
