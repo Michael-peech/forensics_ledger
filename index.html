@@ -258,7 +258,11 @@
                 updateBadgeDisplay(pref);
                 switchLayer('layer-dashboard');
             }
-        } catch (e) { document.getElementById('authError').innerText = "Auth Failed"; document.getElementById('authError').style.display="block"; }
+        } catch (e) { 
+            console.error("WEB3 AUTH ERROR:", e); 
+            document.getElementById('authError').innerText = "Auth Failed: " + (e.message || "Unknown Error"); 
+            document.getElementById('authError').style.display="block"; 
+        }
     });
 
     function acceptAlias() { localStorage.setItem('aliasPref_' + userAddress, 'revealed'); updateBadgeDisplay('revealed'); switchLayer('layer-dashboard'); }
