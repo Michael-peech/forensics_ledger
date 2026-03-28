@@ -3,230 +3,168 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CYB-305: Forensics Ledger</title>
+    <title>CYB-305: Forensics Ledger V4.2</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Fira+Code:wght@400;500;800&display=swap');
 
-        /* --- THEME VARIABLES --- */
         :root {
-            --bg-deep: #030712;
-            --glass-bg: rgba(17, 24, 39, 0.6);
-            --glass-border: rgba(56, 189, 248, 0.15);
-            --accent-cyan: #00f0ff;
-            --accent-glow: rgba(0, 240, 255, 0.4);
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --alert-red: #ff0055;
-            --success-green: #10b981;
-            --lab-purple: #a855f7;
+            --bg-deep: #030712; --glass-bg: rgba(17, 24, 39, 0.6);
+            --glass-border: rgba(56, 189, 248, 0.15); --accent-cyan: #00f0ff;
+            --accent-glow: rgba(0, 240, 255, 0.4); --text-main: #f8fafc;
+            --text-muted: #94a3b8; --alert-red: #ff0055;
+            --success-green: #10b981; --lab-purple: #a855f7;
         }
 
         body {
-            font-family: 'Outfit', sans-serif;
-            background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, var(--bg-deep) 60%);
-            background-attachment: fixed;
-            color: var(--text-main);
-            margin: 0;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 40px 20px;
+            font-family: 'Outfit', sans-serif; background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, var(--bg-deep) 60%);
+            background-attachment: fixed; color: var(--text-main); margin: 0; min-height: 100vh;
+            display: flex; justify-content: center; align-items: center; padding: 40px 20px;
         }
 
-        /* --- GLASSMORPHISM CONTAINER --- */
         .container {
-            max-width: 700px;
-            width: 100%;
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 24px;
-            padding: 40px;
-            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 240, 255, 0.05);
-            position: relative;
-            overflow: hidden;
+            max-width: 700px; width: 100%; background: var(--glass-bg); backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border); border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px; padding: 40px; position: relative; overflow: hidden;
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.8);
         }
 
-        .container::before {
-            content: ''; position: absolute; top: -50px; left: -50px; width: 150px; height: 150px;
-            background: var(--accent-cyan); filter: blur(100px); opacity: 0.15; z-index: -1;
-        }
-
-        /* --- LAYER ANIMATIONS --- */
-        .layer { display: none; opacity: 0; transform: translateY(15px); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        .layer { display: none; opacity: 0; transform: translateY(15px); transition: 0.4s ease; }
         .layer.active { display: block; opacity: 1; transform: translateY(0); }
 
-        /* --- TYPOGRAPHY & HEADER --- */
-        h1 { font-weight: 800; font-size: 32px; text-align: center; margin: 0 0 35px 0; letter-spacing: -0.5px; }
+        h1 { font-weight: 800; font-size: 32px; text-align: center; margin-bottom: 35px; }
         h1 span { color: var(--accent-cyan); text-shadow: 0 0 15px var(--accent-glow); }
-        h3 { color: #e2e8f0; font-size: 20px; font-weight: 600; margin-bottom: 8px; }
-        p { color: var(--text-muted); font-size: 14px; margin-top: 0; line-height: 1.5; }
-        .mono { font-family: 'Fira Code', monospace; }
+        h3 { color: #e2e8f0; font-size: 20px; margin-bottom: 8px; }
+        p { color: var(--text-muted); font-size: 14px; line-height: 1.5; }
 
-        /* --- BADGES --- */
-        .user-badge {
-            background: rgba(0, 240, 255, 0.05); border: 1px solid var(--accent-cyan);
-            color: var(--accent-cyan); padding: 8px 16px; border-radius: 30px;
-            font-size: 12px; display: inline-flex; align-items: center; gap: 8px;
-            box-shadow: 0 0 10px rgba(0, 240, 255, 0.1); margin-bottom: 30px;
+        /* --- DYNAMIC MONOGRAM SHIELDS --- */
+        .agent-avatar { 
+            width: 100px; height: 100px; margin: 20px auto; 
+            display: flex; justify-content: center; align-items: center;
+            background: rgba(0, 240, 255, 0.05); border: 2px solid var(--accent-cyan);
+            border-radius: 20px; font-family: 'Fira Code', monospace; font-size: 36px; 
+            font-weight: 800; color: var(--accent-cyan); letter-spacing: 4px; padding-left: 4px;
+            box-shadow: 0 0 25px var(--accent-glow), inset 0 0 15px rgba(0, 240, 255, 0.1);
+            text-shadow: 0 0 10px var(--accent-cyan); animation: pulse 3s infinite alternate;
         }
-        .user-badge::before { content: ''; width: 8px; height: 8px; background: var(--accent-cyan); border-radius: 50%; box-shadow: 0 0 8px var(--accent-cyan); }
+        @keyframes pulse { 0% { box-shadow: 0 0 15px var(--accent-glow); } 100% { box-shadow: 0 0 35px var(--accent-glow); } }
 
-        /* --- INPUTS & FORMS --- */
+        .user-badge {
+            background: rgba(0, 0, 0, 0.4); border: 1px solid var(--accent-cyan);
+            color: var(--text-main); padding: 6px 16px 6px 6px; border-radius: 30px;
+            font-size: 13px; display: inline-flex; align-items: center; gap: 12px; margin-bottom: 30px;
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.1);
+        }
+        .mini-shield {
+            background: var(--accent-cyan); color: var(--bg-deep);
+            width: 24px; height: 24px; border-radius: 50%; display: flex; 
+            justify-content: center; align-items: center; font-family: 'Fira Code', monospace; 
+            font-size: 10px; font-weight: 800; box-shadow: 0 0 8px var(--accent-cyan);
+        }
+
+        .decode-btn {
+            background: transparent; border: 1px solid var(--lab-purple); color: var(--lab-purple);
+            padding: 4px 10px; border-radius: 20px; font-size: 11px; cursor: pointer; margin-left: 10px;
+            transition: 0.2s; display: none;
+        }
+        .decode-btn:hover { background: rgba(168, 85, 247, 0.2); }
+
         .input-group { position: relative; margin-top: 16px; }
         input, select, textarea {
             width: 100%; padding: 16px; background: rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(255, 255, 255, 0.08); color: var(--text-main);
-            border-radius: 12px; font-family: 'Outfit', sans-serif; font-size: 15px;
-            transition: all 0.3s ease; appearance: none; box-sizing: border-box;
+            border-radius: 12px; font-size: 15px; appearance: none; box-sizing: border-box;
         }
-        input:focus, select:focus, textarea:focus {
-            outline: none; border-color: var(--accent-cyan); background: rgba(0, 240, 255, 0.02);
-            box-shadow: 0 0 0 4px rgba(0, 240, 255, 0.1), inset 0 0 10px rgba(0, 240, 255, 0.05);
-        }
-        input::placeholder, textarea::placeholder { color: #64748b; }
-        textarea { resize: vertical; min-height: 120px; }
-
-        /* Dropdown Arrow & Background Fix */
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent-cyan); box-shadow: 0 0 0 4px rgba(0, 240, 255, 0.1); }
+        
         select {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2300f0ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-            background-repeat: no-repeat; background-position: right 16px center; background-size: 16px; padding-right: 48px; cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' stroke='%2300f0ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 16px center; background-size: 16px; cursor: pointer;
         }
-        /* FIX: Forces the dropdown menu options to be dark so text is readable */
-        select option {
-            background-color: #0f172a;
-            color: #f8fafc;
-            font-size: 15px;
-        }
+        select option { background-color: #0f172a; color: #f8fafc; }
+        input::-webkit-calendar-picker-indicator { opacity: 1; cursor: pointer; filter: invert(1); }
 
-        /* File Upload Styling */
-        input[type="file"] { padding: 12px; background: rgba(0,0,0,0.2); border: 1px dashed rgba(255,255,255,0.2); cursor: pointer; }
-        input[type="file"]::-webkit-file-upload-button {
-            background: var(--text-main); color: var(--bg-deep); padding: 8px 16px; border: none;
-            border-radius: 8px; cursor: pointer; margin-right: 15px; font-weight: 600; font-family: 'Outfit';
-            transition: 0.2s;
-        }
-        input[type="file"]::-webkit-file-upload-button:hover { background: var(--accent-cyan); }
-
-        /* --- BUTTONS --- */
         .btn-primary {
             width: 100%; padding: 16px; margin-top: 24px; background: var(--text-main);
-            color: var(--bg-deep); border: none; border-radius: 12px; font-weight: 800; font-size: 16px;
-            cursor: pointer; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            text-transform: uppercase; letter-spacing: 1px;
+            color: var(--bg-deep); border: none; border-radius: 12px; font-weight: 800;
+            cursor: pointer; transition: 0.3s; text-transform: uppercase;
         }
-        .btn-primary:hover {
-            background: var(--accent-cyan); transform: translateY(-2px);
-            box-shadow: 0 10px 20px -10px var(--accent-glow);
-        }
-        
+        .btn-primary:hover { background: var(--accent-cyan); transform: translateY(-2px); box-shadow: 0 10px 20px -10px var(--accent-glow); }
+
         .btn-menu {
             width: 100%; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05);
-            text-align: left; padding: 20px 24px; font-size: 16px; display: flex; justify-content: space-between;
-            align-items: center; margin-top: 12px; border-radius: 12px; color: var(--text-main);
-            cursor: pointer; transition: 0.2s; font-weight: 400;
+            text-align: left; padding: 20px 24px; margin-top: 12px; border-radius: 12px; color: var(--text-main);
+            cursor: pointer; transition: 0.2s; display: flex; justify-content: space-between;
         }
-        .btn-menu:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.2); transform: translateX(4px); }
-        .btn-menu .arrow { color: var(--accent-cyan); font-family: 'Fira Code', monospace; transition: 0.2s; }
-        .btn-menu:hover .arrow { transform: translateX(4px); }
+        .btn-menu:hover { background: rgba(255, 255, 255, 0.08); transform: translateX(4px); border-color: var(--accent-cyan); }
 
-        .btn-back {
-            background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted);
-            margin-bottom: 25px; padding: 8px 16px; font-size: 13px; border-radius: 8px; cursor: pointer; transition: 0.2s;
-        }
-        .btn-back:hover { background: rgba(255,255,255,0.05); color: var(--text-main); }
+        .btn-back { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); margin-bottom: 25px; padding: 8px 16px; font-size: 13px; border-radius: 8px; cursor: pointer; }
 
-        /* --- STATUS TERMINAL --- */
-        .status-box {
-            margin-top: 20px; font-size: 13px; font-family: 'Fira Code', monospace; padding: 16px;
-            border-radius: 12px; display: none; word-wrap: break-word; background: rgba(0,0,0,0.5); border-left: 3px solid transparent;
-        }
-        .status-box.active { display: block; border-left-color: var(--accent-cyan); color: var(--accent-cyan); box-shadow: inset 0 0 20px rgba(0, 240, 255, 0.05); }
-        .status-box.error { border-left-color: var(--alert-red); color: var(--alert-red); box-shadow: inset 0 0 20px rgba(255, 0, 85, 0.05); }
+        .status-box { margin-top: 20px; font-size: 13px; font-family: 'Fira Code', monospace; padding: 16px; border-radius: 12px; display: none; background: rgba(0,0,0,0.5); border-left: 3px solid var(--accent-cyan); color: var(--accent-cyan); }
+        .status-box.error { border-left-color: var(--alert-red); color: var(--alert-red); }
 
-        /* --- EVIDENCE LOCKER GRID --- */
         .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; margin-top: 24px; }
-        .grid-item {
-            background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px;
-            padding: 24px 16px; text-align: center; cursor: pointer; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            position: relative; overflow: hidden;
-        }
-        .grid-item::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(180deg, rgba(0,240,255,0.1) 0%, transparent 100%); opacity: 0; transition: 0.3s;
-        }
-        .grid-item:hover { transform: translateY(-5px); border-color: var(--accent-cyan); box-shadow: 0 10px 20px -10px var(--accent-glow); }
-        .grid-item:hover::before { opacity: 1; }
-        
-        .hologram-icon { font-size: 42px; margin-bottom: 12px; display: inline-block; filter: drop-shadow(0 0 8px rgba(0,240,255,0.6)); animation: float 4s ease-in-out infinite; }
+        .grid-item { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 24px 16px; text-align: center; cursor: pointer; transition: 0.3s; }
+        .grid-item:hover { border-color: var(--accent-cyan); transform: translateY(-5px); box-shadow: 0 10px 20px -10px var(--accent-glow); }
+        .hologram-icon { font-size: 42px; margin-bottom: 12px; display: inline-block; animation: float 4s ease-in-out infinite; }
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
-        .item-label { font-size: 14px; font-family: 'Fira Code', monospace; color: var(--text-main); font-weight: 500; margin-bottom: 4px; }
-        .case-label { font-size: 11px; color: var(--accent-cyan); text-transform: uppercase; letter-spacing: 0.5px; }
 
-        /* --- HISTORY LOGS --- */
-        .history-card {
-            background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); padding: 16px; margin-top: 12px;
-            border-radius: 12px; font-family: 'Fira Code', monospace; font-size: 12px; color: var(--text-muted);
-            display: flex; flex-direction: column; gap: 6px; border-left: 2px solid rgba(255,255,255,0.1); transition: 0.2s;
+        .history-card { background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); padding: 16px; margin-top: 12px; border-radius: 12px; font-family: 'Fira Code', monospace; font-size: 12px; border-left: 2px solid var(--accent-cyan); }
+
+        /* --- V4.2 ONBOARDING MODAL --- */
+        #layer-onboarding {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-deep); z-index: 100; border-radius: 24px;
+            display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 40px; box-sizing: border-box;
         }
-        .history-card:hover { background: rgba(0,0,0,0.4); border-left-color: var(--accent-cyan); }
-        .log-highlight { color: var(--text-main); font-weight: 500; }
-        .route-out { color: var(--alert-red); } .route-in { color: var(--success-green); }
-
-        /* --- HELP CARDS --- */
-        .help-card { background: rgba(0,0,0,0.2); padding: 20px; border-radius: 12px; margin-top: 16px; border-top: 1px solid rgba(255,255,255,0.05); }
-        .help-card h4 { color: var(--text-main); margin: 0 0 8px 0; display: flex; align-items: center; gap: 8px; }
-        .help-card h4::before { content: '⚡'; font-size: 14px; }
+        #layer-onboarding.active { display: flex; animation: bootUp 1.5s ease; }
+        @keyframes bootUp { 0% { opacity: 0; filter: brightness(3); } 100% { opacity: 1; filter: brightness(1); } }
+        .agent-name { font-size: 26px; font-weight: 800; color: var(--accent-cyan); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 30px;}
+        .typewriter { font-family: 'Fira Code', monospace; font-size: 14px; color: var(--success-green); white-space: nowrap; overflow: hidden; border-right: 2px solid var(--success-green); animation: typing 2s steps(40, end), blink-caret .75s step-end infinite; }
+        @keyframes typing { from { width: 0 } to { width: 100% } }
+        @keyframes blink-caret { from, to { border-color: transparent } 50% { border-color: var(--success-green); } }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Chain Of Custody <span>Forensics Ledger</span></h1>
+    <h1>CYB-305 <span>Ledger</span></h1>
 
     <div id="layer-auth" class="layer active text-center">
-        <p style="margin-bottom: 35px; font-size: 16px;">Initiate secure handshake to access forensics mainframe.</p>
-        <button id="connectBtn" class="btn-primary" style="background: var(--accent-cyan); color: #000;">Authenticate Wallet Identity</button>
+        <p style="margin-bottom: 35px;">Initiate secure handshake to access forensics mainframe.</p>
+        <button id="connectBtn" class="btn-primary" style="background: var(--accent-cyan); color: #000;">Authenticate Identity</button>
         <div id="authError" style="color: var(--alert-red); margin-top: 20px; font-size: 14px; display: none; font-family: 'Fira Code', monospace;"></div>
     </div>
 
-    <div id="layer-dashboard" class="layer">
-        <div class="text-center"><div id="userBadge" class="user-badge mono">ID: 0x...</div></div>
-        
-        <button class="btn-menu" onclick="switchLayer('layer-intake')">
-            <span>A. Log Initial Evidence</span> <span class="arrow">>></span>
-        </button>
-        <button class="btn-menu" onclick="switchLayer('layer-transfer')">
-            <span>B. Transfer Custody Signature</span> <span class="arrow">>></span>
-        </button>
-        <button class="btn-menu" onclick="loadHistory()">
-            <span>C. Global Immutable History</span> <span class="arrow">>></span>
-        </button>
-        <button class="btn-menu" onclick="loadLocker()" style="border-left: 2px solid var(--success-green);">
-            <span>D. Secure Evidence Locker</span> <span class="arrow">>></span>
-        </button>
-        <button class="btn-menu" onclick="switchLayer('layer-help')" style="border-left: 2px solid var(--lab-purple);">
-            <span>E. System Protocol Guide</span> <span class="arrow">>></span>
-        </button>
-        
-        <div class="text-center">
-            <button onclick="logout()" style="background: transparent; border: none; color: var(--alert-red); margin-top: 30px; cursor: pointer; font-weight: 600; font-size: 14px; letter-spacing: 1px; transition: 0.2s;">[ TERMINATE SESSION ]</button>
+    <div id="layer-onboarding">
+        <div id="onboardConsole" class="typewriter">> INITIALIZING NEW OPERATIVE...</div>
+        <div id="onboardReveal" style="display: none; width: 100%;">
+            <p style="color: var(--text-muted); font-family: 'Fira Code', monospace;">CRYPTOGRAPHIC ALIAS DESIGNATED:</p>
+            <div id="modalAvatar" class="agent-avatar"></div>
+            <div id="modalName" class="agent-name"></div>
+            <button onclick="acceptAlias()" class="btn-primary" style="margin-top: 0; margin-bottom: 15px;">Accept Designation</button>
+            <button onclick="skipAlias()" style="background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); width: 100%; padding: 12px; border-radius: 12px; cursor: pointer;">Remain Anonymous (Skip)</button>
         </div>
+    </div>
+
+    <div id="layer-dashboard" class="layer">
+        <div class="text-center">
+            <div id="userBadge" class="user-badge mono">ID: 0x...</div>
+            <button id="decodeBtn" class="decode-btn" onclick="decodeAliasLater()">🧬 Decode</button>
+        </div>
+        <button class="btn-menu" onclick="switchLayer('layer-intake')"><span>A. Log Initial Evidence</span> <span style="color:var(--accent-cyan)">>></span></button>
+        <button class="btn-menu" onclick="switchLayer('layer-transfer')"><span>B. Transfer Custody Signature</span> <span style="color:var(--accent-cyan)">>></span></button>
+        <button class="btn-menu" onclick="loadHistory()"><span>C. Global Immutable History</span> <span style="color:var(--accent-cyan)">>></span></button>
+        <button class="btn-menu" onclick="loadLocker()" style="border-left: 2px solid var(--success-green);"><span>D. Secure Evidence Locker</span> <span style="color:var(--accent-cyan)">>></span></button>
+        <button class="btn-menu" onclick="switchLayer('layer-help')" style="border-left: 2px solid var(--lab-purple);"><span>E. System Protocol Guide</span> <span style="color:var(--accent-cyan)">>></span></button>
+        <div class="text-center"><button onclick="logout()" style="background:transparent; border:none; color:var(--alert-red); margin-top:30px; cursor:pointer; font-weight:600;">[ TERMINATE SESSION ]</button></div>
     </div>
 
     <div id="layer-intake" class="layer">
         <button class="btn-back" onclick="switchLayer('layer-dashboard')">← Dashboard</button>
         <h3>Initial Evidence Intake</h3>
-        <p>Establish origin of custody. Wallet is auto-assigned as seizing officer.</p>
-        
-        <div class="input-group"><input type="text" id="inCaseName" placeholder="Case Designation (e.g., Operation Ghost)"></div>
-        <div class="input-group"><input type="text" id="inItemId" placeholder="Unique Item ID (e.g., iPhone_042)"></div>
+        <div class="input-group"><input type="text" id="inCaseName" placeholder="Case Designation"></div>
+        <div class="input-group"><input type="text" id="inItemId" placeholder="Unique Item ID"></div>
         <div class="input-group"><input type="file" id="inFile"></div>
-        
         <button id="btnSubmitIntake" class="btn-primary">Secure File & Sign Ledger</button>
         <div id="statusIntake" class="status-box"></div>
     </div>
@@ -234,111 +172,70 @@
     <div id="layer-transfer" class="layer">
         <button class="btn-back" onclick="switchLayer('layer-dashboard')">← Dashboard</button>
         <h3>Transfer Custody</h3>
-        <p>System requires cryptographic reverse-lookup verification prior to transfer.</p>
-        
-        <div class="input-group"><input type="text" id="trSearch" placeholder="Query: Exact Case Name OR Item ID"></div>
-        <div class="input-group"><input type="text" id="trWalrusId" placeholder="Verification: Paste origin Walrus ID"></div>
-        <div class="input-group"><input type="text" id="trCustodian" placeholder="Target: Receiving Officer (0x...)"></div>
+        <div class="input-group"><input type="text" id="trSearch" placeholder="Search: Case Name OR Item ID"></div>
+        <div class="input-group"><input type="text" id="trWalrusId" placeholder="Verification: Paste Walrus ID"></div>
         
         <div class="input-group">
             <select id="trAction">
-                <option value="" disabled selected>Select Authorized Forensic Action...</option>
-                <option value="Transferred to Secure Storage">Transferred to Secure Storage</option>
-                <option value="Checked out for Forensic Imaging">Checked out for Forensic Imaging</option>
-                <option value="Checked out for Data Analysis">Checked out for Data Analysis</option>
-                <option value="Transferred for Legal Review">Transferred for Legal Review</option>
-                <option value="Case Closed / Returned to Owner">Case Closed / Returned to Owner</option>
+                <option value="" disabled selected>1. Select Authorized Action First...</option>
+                <option value="Transferred to Secure Storage">Transferred to Secure Storage (Clerk)</option>
+                <option value="Checked out for Forensic Imaging">Checked out for Forensic Imaging (Lab)</option>
+                <option value="Checked out for Data Analysis">Checked out for Data Analysis (Lab)</option>
+                <option value="Transferred for Legal Review">Transferred for Legal Review (Court)</option>
+                <option value="Case Closed / Returned to Owner">Case Closed / Returned to Owner (Admin)</option>
             </select>
         </div>
+
+        <div class="input-group">
+            <input type="text" id="trCustodian" list="operativeList" placeholder="2. Search Target Alias or Input Raw 0x..." disabled>
+            <datalist id="operativeList"></datalist>
+        </div>
         
-        <button id="btnSubmitTransfer" class="btn-primary" style="background: linear-gradient(90deg, #f59e0b, #ea580c); color: #fff;">Execute Verified Transfer</button>
+        <button id="btnSubmitTransfer" class="btn-primary" style="background: linear-gradient(90deg, #f59e0b, #ea580c); color:#fff">Execute Verified Transfer</button>
         <div id="statusTransfer" class="status-box"></div>
     </div>
 
-    <div id="layer-history" class="layer">
-        <button class="btn-back" onclick="switchLayer('layer-dashboard')">← Dashboard</button>
-        <h3>Activity History</h3>
-        <div id="historyContainer" style="max-height: 400px; overflow-y: auto; padding-right: 10px;"></div>
-    </div>
-
-    <div id="layer-locker" class="layer">
-        <button class="btn-back" onclick="switchLayer('layer-dashboard')">← Dashboard</button>
-        <h3>My Evidence Locker</h3>
-        <p>Encrypted assets currently signed to your wallet address.</p>
-        <div id="lockerGrid" class="grid-container"></div>
-    </div>
-
-    <div id="layer-lab" class="layer">
-        <button class="btn-back" onclick="switchLayer('layer-locker')">← Return to Vault</button>
-        <h3>Forensics Terminal</h3>
-        <p class="mono" style="color: var(--accent-cyan); font-size: 13px; margin-bottom: 20px;">Asset Target: <span id="labItemLabel" style="color: #fff;"></span></p>
-        
-        <div id="labStatusAlert" style="padding: 12px; border-radius: 8px; font-size: 13px; margin-bottom: 20px; background: rgba(0,0,0,0.3); border-left: 3px solid var(--text-muted);"></div>
-        
-        <div class="input-group"><textarea id="labAnalysis" placeholder="ANALYSIS LOG: Document binary modifications, payload injections, or physical alterations..."></textarea></div>
-        <div class="input-group"><textarea id="labEvaluation" placeholder="EVALUATION LOG: Synthesize narrative timeline based on analysis vectors..."></textarea></div>
-        
-        <button id="btnSubmitLab" class="btn-primary" style="background: var(--lab-purple); color: #fff;">Encode Reports to Blockchain</button>
-        <div id="statusLab" class="status-box"></div>
-    </div>
-
-    <div id="layer-help" class="layer" style="max-height: 500px; overflow-y: auto; padding-right: 10px;">
-        <button class="btn-back" onclick="switchLayer('layer-dashboard')">← Dashboard</button>
-        <h3>Protocol Documentation</h3>
-        
-        <div class="help-card">
-            <h4>A. Intake Protocol</h4>
-            <p>Initiates a new asset on the EVM registry. A case name and unique identifier are mapped to the decentralized storage hash. Your wallet is mathematically locked as the origin node.</p>
-        </div>
-        <div class="help-card">
-            <h4>B. Transfer & Verification</h4>
-            <p>To execute a handoff, input the Case Name (or Item ID). The system will attempt a reverse-lookup. <strong>Integrity Check:</strong> You must supply the correct Walrus Hash. If the payload does not match the registry, the transaction reverts.</p>
-        </div>
-        <div class="help-card">
-            <h4>D. Conditional Lab Access</h4>
-            <p>Accessing an asset in your locker queries its state. If the last recorded action is <span class="mono" style="color:var(--accent-cyan)">Forensic Imaging</span> or <span class="mono" style="color:var(--accent-cyan)">Data Analysis</span>, the system grants write-access to the Analysis and Evaluation matrices.</p>
-        </div>
-    </div>
-
+    <div id="layer-history" class="layer"><button class="btn-back" onclick="switchLayer('layer-dashboard')">← Dashboard</button><h3>Immutable History</h3><div id="historyContainer" style="max-height: 400px; overflow-y: auto;"></div></div>
+    <div id="layer-locker" class="layer"><button class="btn-back" onclick="switchLayer('layer-dashboard')">← Dashboard</button><h3>Evidence Locker</h3><div id="lockerGrid" class="grid-container"></div></div>
+    <div id="layer-lab" class="layer"><button class="btn-back" onclick="switchLayer('layer-locker')">← Locker</button><h3>Forensics Terminal</h3><p class="mono">Target: <span id="labItemLabel"></span></p><div id="labStatusAlert" style="padding:12px; border-radius:8px; font-size:13px; margin-bottom:20px; background:rgba(0,0,0,0.3);"></div><textarea id="labAnalysis" placeholder="ANALYSIS LOG..."></textarea><textarea id="labEvaluation" placeholder="EVALUATION LOG..."></textarea><button id="btnSubmitLab" class="btn-primary" style="background:var(--lab-purple); color:#fff">Encode Reports</button><div id="statusLab" class="status-box"></div></div>
+    <div id="layer-help" class="layer"><button class="btn-back" onclick="switchLayer('layer-dashboard')">← Dashboard</button><h3>Protocol Guide</h3><div class="help-card"><h4>Roles & Aliases</h4><p>Your alias is deterministically generated from your wallet address. The blockchain mathematically governs your security clearance level.</p></div></div>
 </div>
 
 <script>
-    // --- ⚠️ PASTE YOUR V4.1 REMIX CONTRACT ADDRESS HERE ⚠️ ---
+    // --- ⚠️ PASTE YOUR V4.2 REMIX CONTRACT ADDRESS HERE ⚠️ ---
     const contractAddress = "0xe531C24B1D7eFD84aBC5548d7841742b8c8ABf60"; 
+    
+    // V4.2 ABI 
+    const contractABI = [{"inputs":[],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"string","name":"itemId","type":"string"},{"indexed":false,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"string","name":"action","type":"string"},{"indexed":false,"internalType":"uint256","name":"timestamp","type":"uint256"}],"name":"CustodyTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"string","name":"itemId","type":"string"},{"indexed":false,"internalType":"string","name":"caseName","type":"string"},{"indexed":true,"internalType":"address","name":"custodian","type":"address"},{"indexed":false,"internalType":"uint256","name":"timestamp","type":"uint256"}],"name":"EvidenceLogged","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"string","name":"itemId","type":"string"},{"indexed":true,"internalType":"address","name":"tech","type":"address"},{"indexed":false,"internalType":"uint256","name":"timestamp","type":"uint256"}],"name":"LabReportUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"operative","type":"address"},{"indexed":false,"internalType":"uint8","name":"role","type":"uint8"}],"name":"OperativeAuthorized","type":"event"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"allItemIds","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"admin","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_operative","type":"address"},{"internalType":"uint8","name":"_roleId","type":"uint8"}],"name":"authorizeOperative","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"","type":"string"}],"name":"currentCustodian","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"evidenceHistory","outputs":[{"internalType":"string","name":"itemId","type":"string"},{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"string","name":"action","type":"string"},{"internalType":"uint256","name":"timestamp","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"","type":"string"}],"name":"evidenceRegistry","outputs":[{"internalType":"string","name":"caseName","type":"string"},{"internalType":"string","name":"itemId","type":"string"},{"internalType":"string","name":"walrusBlobId","type":"string"},{"internalType":"string","name":"analysisReport","type":"string"},{"internalType":"string","name":"evaluationReport","type":"string"},{"internalType":"string","name":"lastAction","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getAllOperatives","outputs":[{"internalType":"address[]","name":"","type":"address[]"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getTotalItems","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getTotalLogs","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"isRegistered","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"","type":"string"}],"name":"itemExists","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"_caseName","type":"string"},{"internalType":"string","name":"_itemId","type":"string"},{"internalType":"string","name":"_walrusBlobId","type":"string"}],"name":"logInitialSeizure","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"operativeRoles","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"registeredOperatives","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"_itemId","type":"string"},{"internalType":"string","name":"_analysis","type":"string"},{"internalType":"string","name":"_evaluation","type":"string"}],"name":"submitLabReport","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_itemId","type":"string"},{"internalType":"address","name":"_newCustodian","type":"address"},{"internalType":"string","name":"_action","type":"string"}],"name":"transferCustody","outputs":[],"stateMutability":"nonpayable","type":"function"}];
 
-    // V4.1 ABI (Includes Events, validString checks, and lastAction)
-    const contractABI = [
-      { "anonymous": false, "inputs": [ { "indexed": true, "internalType": "string", "name": "itemId", "type": "string" }, { "indexed": false, "internalType": "address", "name": "from", "type": "address" }, { "indexed": true, "internalType": "address", "name": "to", "type": "address" }, { "indexed": false, "internalType": "string", "name": "action", "type": "string" }, { "indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256" } ], "name": "CustodyTransferred", "type": "event" },
-      { "anonymous": false, "inputs": [ { "indexed": true, "internalType": "string", "name": "itemId", "type": "string" }, { "indexed": false, "internalType": "string", "name": "caseName", "type": "string" }, { "indexed": true, "internalType": "address", "name": "custodian", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256" } ], "name": "EvidenceLogged", "type": "event" },
-      { "anonymous": false, "inputs": [ { "indexed": true, "internalType": "string", "name": "itemId", "type": "string" }, { "indexed": true, "internalType": "address", "name": "tech", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256" } ], "name": "LabReportUpdated", "type": "event" },
-      { "inputs": [ { "internalType": "string", "name": "_caseName", "type": "string" }, { "internalType": "string", "name": "_itemId", "type": "string" }, { "internalType": "string", "name": "_walrusBlobId", "type": "string" } ], "name": "logInitialSeizure", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
-      { "inputs": [ { "internalType": "string", "name": "_itemId", "type": "string" }, { "internalType": "address", "name": "_newCustodian", "type": "address" }, { "internalType": "string", "name": "_action", "type": "string" } ], "name": "transferCustody", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
-      { "inputs": [ { "internalType": "string", "name": "_itemId", "type": "string" }, { "internalType": "string", "name": "_analysis", "type": "string" }, { "internalType": "string", "name": "_evaluation", "type": "string" } ], "name": "submitLabReport", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
-      { "inputs": [], "name": "getTotalLogs", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "stateMutability": "view", "type": "function" },
-      { "inputs": [], "name": "getTotalItems", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "stateMutability": "view", "type": "function" },
-      { "inputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "name": "allItemIds", "outputs": [ { "internalType": "string", "name": "", "type": "string" } ], "stateMutability": "view", "type": "function" },
-      { "inputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "name": "evidenceHistory", "outputs": [ { "internalType": "string", "name": "itemId", "type": "string" }, { "internalType": "address", "name": "from", "type": "address" }, { "internalType": "address", "name": "to", "type": "address" }, { "internalType": "string", "name": "action", "type": "string" }, { "internalType": "uint256", "name": "timestamp", "type": "uint256" } ], "stateMutability": "view", "type": "function" },
-      { "inputs": [ { "internalType": "string", "name": "", "type": "string" } ], "name": "currentCustodian", "outputs": [ { "internalType": "address", "name": "", "type": "address" } ], "stateMutability": "view", "type": "function" },
-      { "inputs": [ { "internalType": "string", "name": "", "type": "string" } ], "name": "evidenceRegistry", "outputs": [ { "internalType": "string", "name": "caseName", "type": "string" }, { "internalType": "string", "name": "itemId", "type": "string" }, { "internalType": "string", "name": "walrusBlobId", "type": "string" }, { "internalType": "string", "name": "analysisReport", "type": "string" }, { "internalType": "string", "name": "evaluationReport", "type": "string" }, { "internalType": "string", "name": "lastAction", "type": "string" } ], "stateMutability": "view", "type": "function" }
-    ];
+    let provider, signer, contract, userAddress, myProfile;
+    let aliasReverseMap = {}; 
 
-    let provider, signer, contract, userAddress, currentActiveItemForLab = "";
+    // --- GEOGRAPHIC MONOGRAM COMBINATOR ---
+    const animals = ["Gorilla", "Platypus", "Wolf", "Raven", "Kraken", "Viper", "Panther", "Falcon", "Mantis", "Shark", "Jackal", "Fox", "Bear", "Owl", "Cobra"];
+    const locations = ["Kyoto", "Brazil", "Texas", "Madagascar", "Cairo", "London", "Dubai", "Sydney", "Mumbai", "Paris", "Toronto", "Berlin", "Seoul", "Rome", "Lagos"];
+
+    function getAlias(address) {
+        if (!address || address === "0x0000000000000000000000000000000000000000") return { name: "Origin Node", initials: "ON" };
+        const seed = parseInt(address.substring(2, 10), 16);
+        const animIdx = seed % animals.length;
+        const locIdx = (seed >> 4) % locations.length; 
+        const animal = animals[animIdx];
+        const loc = locations[locIdx];
+        return { name: `Agent ${animal} of ${loc}`, initials: `${animal.charAt(0)}${loc.charAt(0)}` };
+    }
 
     function switchLayer(layerId) {
         document.querySelectorAll('.layer').forEach(el => el.classList.remove('active'));
         document.getElementById(layerId).classList.add('active');
-        document.querySelectorAll('.status-box').forEach(el => { el.classList.remove('active', 'error'); el.innerText = ""; });
+        if(layerId === 'layer-onboarding') document.getElementById('layer-onboarding').classList.add('active');
     }
 
-    function logout() {
-        provider = null; signer = null; contract = null; userAddress = null;
-        document.getElementById('userBadge').innerText = "ID: 0x...";
-        switchLayer('layer-auth');
-    }
+    function logout() { location.reload(); }
 
+    // --- AUTHENTICATION & ONBOARDING FLOW ---
     document.getElementById('connectBtn').addEventListener('click', async () => {
         try {
-            if (!window.ethereum) throw new Error("Web3 provider not detected.");
             await window.ethereum.request({ method: "wallet_requestPermissions", params: [{ eth_accounts: {} }] });
             provider = new ethers.providers.Web3Provider(window.ethereum);
             await provider.send("eth_requestAccounts", []);
@@ -346,205 +243,200 @@
             userAddress = await signer.getAddress();
             contract = new ethers.Contract(contractAddress, contractABI, signer);
             
-            const shortAddr = userAddress.substring(0, 6) + "..." + userAddress.substring(userAddress.length - 4);
-            document.getElementById('userBadge').innerText = "ID: " + shortAddr;
-            switchLayer('layer-dashboard');
-        } catch (error) {
-            document.getElementById('authError').innerText = "> Auth Failure: " + (error.code === 4001 ? "User rejected signature." : error.message);
-            document.getElementById('authError').style.display = "block";
-        }
+            myProfile = getAlias(userAddress);
+            const pref = localStorage.getItem('aliasPref_' + userAddress);
+
+            if (!pref) {
+                switchLayer('layer-onboarding');
+                setTimeout(() => {
+                    document.getElementById('onboardConsole').style.display = 'none';
+                    document.getElementById('onboardReveal').style.display = 'block';
+                    document.getElementById('modalAvatar').innerText = myProfile.initials;
+                    document.getElementById('modalName').innerText = myProfile.name;
+                }, 2000);
+            } else {
+                updateBadgeDisplay(pref);
+                switchLayer('layer-dashboard');
+            }
+        } catch (e) { document.getElementById('authError').innerText = "Auth Failed"; document.getElementById('authError').style.display="block"; }
     });
 
-    if (window.ethereum) { window.ethereum.on('accountsChanged', () => logout()); }
+    function acceptAlias() { localStorage.setItem('aliasPref_' + userAddress, 'revealed'); updateBadgeDisplay('revealed'); switchLayer('layer-dashboard'); }
+    function skipAlias() { localStorage.setItem('aliasPref_' + userAddress, 'raw'); updateBadgeDisplay('raw'); switchLayer('layer-dashboard'); }
+    function decodeAliasLater() { acceptAlias(); }
+
+    function updateBadgeDisplay(pref) {
+        const badge = document.getElementById('userBadge');
+        const decodeBtn = document.getElementById('decodeBtn');
+        if (pref === 'revealed') {
+            badge.innerHTML = `<div class="mini-shield">${myProfile.initials}</div> ${myProfile.name}`;
+            decodeBtn.style.display = 'none';
+        } else {
+            badge.innerText = `ID: ${userAddress.substring(0,8)}...`;
+            decodeBtn.style.display = 'inline-block';
+        }
+    }
+
+    // --- V4.2 CASCADING DATALIST (RBAC) ---
+    document.getElementById('trAction').addEventListener('change', async (e) => {
+        const action = e.target.value;
+        const inputField = document.getElementById('trCustodian');
+        const datalist = document.getElementById('operativeList');
+        inputField.disabled = false;
+        inputField.placeholder = "Querying Blockchain Roster...";
+        datalist.innerHTML = "";
+        aliasReverseMap = {}; 
+
+        try {
+            let reqRole = 0;
+            if (action.includes("Secure Storage")) reqRole = 2; 
+            else if (action.includes("Forensic") || action.includes("Analysis")) reqRole = 3; 
+            else if (action.includes("Legal Review")) reqRole = 4; 
+
+            const roster = await contract.getAllOperatives();
+            
+            for (let i = 0; i < roster.length; i++) {
+                const opAddress = roster[i];
+                const opRole = await contract.operativeRoles(opAddress);
+                
+                if (opRole == reqRole || reqRole == 0) { 
+                    const opAlias = getAlias(opAddress);
+                    const displayName = `[${opAlias.initials}] ${opAlias.name}`;
+                    
+                    const option = document.createElement('option');
+                    option.value = displayName; 
+                    datalist.appendChild(option);
+                    aliasReverseMap[displayName] = opAddress;
+                }
+            }
+            inputField.placeholder = "2. Select Target Operative or paste 0x...";
+            inputField.value = "";
+        } catch (error) {
+            inputField.placeholder = "Directory Offline. Paste Raw 0x...";
+        }
+    });
 
     // --- MODULE A: INTAKE ---
     document.getElementById('btnSubmitIntake').addEventListener('click', async () => {
-        const caseName = document.getElementById('inCaseName').value.trim();
-        const itemId = document.getElementById('inItemId').value.trim();
-        const fileInput = document.getElementById('inFile');
-        const statusText = document.getElementById('statusIntake');
-
-        if (!caseName || !itemId || fileInput.files.length === 0) return alert("All fields are required for intake protocol.");
-
+        const cName = document.getElementById('inCaseName').value;
+        const iId = document.getElementById('inItemId').value;
+        const file = document.getElementById('inFile').files[0];
+        const status = document.getElementById('statusIntake');
+        if(!cName || !iId || !file) return alert("Fill all fields");
         try {
-            statusText.className = "status-box active";
-            statusText.innerText = "> Establishing payload connection...";
-            
-            let blobId = "fallback_hash_" + Math.random().toString(36).substring(2, 15);
+            status.style.display="block"; status.innerText="> Uploading to decentralized node...";
+            let bId = "fallback_" + Math.random().toString(36).substring(7);
             try {
-                const walrusResponse = await fetch("https://publisher.walrus-testnet.walrus.space/v1/store?epochs=5", { method: "PUT", body: fileInput.files[0] });
-                const walrusData = await walrusResponse.json();
-                blobId = walrusData.alreadyCertified ? walrusData.alreadyCertified.blobId : walrusData.newlyCreated.blobObject.blobId;
-            } catch (e) { console.warn("Storage node offline. Fallback generated."); }
-
-            statusText.innerText = `> Hash generated: ${blobId.substring(0,10)}...\n> Awaiting EVM state execution...`;
-            const tx = await contract.logInitialSeizure(caseName, itemId, blobId);
-            await tx.wait();
-            
-            alert(`[ ASSET SECURED ]\nRetain Walrus ID for Transfer Protocol:\n${blobId}`);
-            document.getElementById('inCaseName').value = ''; document.getElementById('inItemId').value = ''; fileInput.value = '';
-            switchLayer('layer-dashboard');
-        } catch (error) {
-            statusText.className = "status-box active error";
-            statusText.innerText = "> FATAL: " + error.message;
-        }
+                const res = await fetch("https://publisher.walrus-testnet.walrus.space/v1/store?epochs=5", { method: "PUT", body: file });
+                const data = await res.json(); bId = data.alreadyCertified ? data.alreadyCertified.blobId : data.newlyCreated.blobObject.blobId;
+            } catch(e) {}
+            status.innerText="> Signing EVM State...";
+            const tx = await contract.logInitialSeizure(cName, iId, bId);
+            await tx.wait(); alert("Secured! ID: " + bId); switchLayer('layer-dashboard');
+        } catch(e) { status.className="status-box error"; status.innerText="Error: " + e.message; }
     });
 
-    // --- MODULE B: REVERSE-LOOKUP TRANSFER ---
+    // --- MODULE B: TRANSFER (WITH REVERSE ALIAS LOOKUP) ---
     document.getElementById('btnSubmitTransfer').addEventListener('click', async () => {
-        const searchValue = document.getElementById('trSearch').value.trim();
-        const walrusId = document.getElementById('trWalrusId').value.trim();
-        const newCustodian = document.getElementById('trCustodian').value.trim();
-        const action = document.getElementById('trAction').value;
-        const statusText = document.getElementById('statusTransfer');
-
-        if (!searchValue || !walrusId || !newCustodian || !action) return alert("Complete all protocol fields.");
-
+        const search = document.getElementById('trSearch').value;
+        const wId = document.getElementById('trWalrusId').value;
+        const rawInput = document.getElementById('trCustodian').value;
+        const act = document.getElementById('trAction').value;
+        const status = document.getElementById('statusTransfer');
         try {
-            statusText.className = "status-box active";
-            statusText.innerText = "> Querying global registry for match...";
-
-            const totalItems = await contract.getTotalItems();
-            let targetItemId = null;
-
-            for (let i = 0; i < totalItems; i++) {
-                const currentId = await contract.allItemIds(i);
-                const registryData = await contract.evidenceRegistry(currentId);
-                if (registryData.walrusBlobId === walrusId) {
-                    if (currentId === searchValue || registryData.caseName === searchValue) {
-                        targetItemId = currentId; break; 
-                    }
-                }
+            status.className="status-box active"; status.style.display="block"; status.innerText="> Verifying...";
+            
+            let destAddress = rawInput;
+            if (aliasReverseMap[rawInput]) {
+                destAddress = aliasReverseMap[rawInput]; 
+            } else if (!rawInput.startsWith("0x") || rawInput.length !== 42) {
+                throw new Error("Invalid Target. Select from directory or input raw 0x address.");
             }
 
-            if (!targetItemId) throw new Error("INTEGRITY COMPROMISED: Input mismatch. Hash does not align with requested Case/Item.");
-
-            statusText.innerText = `> Verified Object: [${targetItemId}]\n> Requesting cryptographic handoff...`;
-            const tx = await contract.transferCustody(targetItemId, newCustodian, action);
-            await tx.wait();
+            const total = await contract.getTotalItems();
+            let targetId = null;
+            for(let i=0; i<total; i++) {
+                const id = await contract.allItemIds(i);
+                const reg = await contract.evidenceRegistry(id);
+                if(reg.walrusBlobId === wId && (id === search || reg.caseName === search)) { targetId = id; break; }
+            }
+            if(!targetId) throw new Error("Integrity Mismatch. Hash rejected.");
             
-            alert("[ CUSTODY TRANSFERRED ]");
-            document.getElementById('trSearch').value = ''; document.getElementById('trWalrusId').value = ''; document.getElementById('trCustodian').value = ''; document.getElementById('trAction').value = '';
-            switchLayer('layer-dashboard');
-        } catch (error) {
-            statusText.className = "status-box active error";
-            statusText.innerText = "> ERROR: " + error.message;
-        }
+            status.innerText="> Submitting to Blockchain...";
+            const tx = await contract.transferCustody(targetId, destAddress, act);
+            await tx.wait(); alert("Transferred!"); switchLayer('layer-dashboard');
+        } catch(e) { status.className="status-box error"; status.innerText=e.message; }
     });
 
     // --- MODULE C: HISTORY ---
     async function loadHistory() {
         switchLayer('layer-history');
         const container = document.getElementById('historyContainer');
-        container.innerHTML = "<p class='mono' style='color:var(--accent-cyan);'>SYNCING LEDGER...</p>";
-        
-        try {
-            const totalLogs = await contract.getTotalLogs();
-            if (totalLogs == 0) return container.innerHTML = "<p>Registry is empty.</p>";
-
-            let historyHTML = "";
-            let limit = totalLogs > 20 ? totalLogs - 20 : 0;
-            
-            for (let i = totalLogs - 1; i >= limit; i--) {
-                const log = await contract.evidenceHistory(i);
-                const date = new Date(log.timestamp * 1000).toLocaleString();
-                const fromText = log.from === "0x0000000000000000000000000000000000000000" ? "[ORIGIN NODE]" : log.from.substring(0,8) + "...";
-                const toText = log.to.substring(0,8) + "...";
-
-                historyHTML += `
-                    <div class="history-card">
-                        <div><span class="log-highlight">Asset:</span> ${log.itemId} | <span class="log-highlight">Event:</span> ${log.action}</div>
-                        <div><span class="log-highlight">Trace:</span> <span class="route-out">${fromText}</span> ➔ <span class="route-in">${toText}</span></div>
-                        <div style="color: #64748b;">${date}</div>
-                    </div>`;
-            }
-            container.innerHTML = historyHTML;
-        } catch (e) { container.innerHTML = `<span class="route-out">Fetch failure.</span>`; }
+        const total = await contract.getTotalLogs();
+        let html = "";
+        for(let i=total-1; i>=0; i--) {
+            const log = await contract.evidenceHistory(i);
+            const opAlias = getAlias(log.to);
+            html += `<div class="history-card"><b>Asset:</b> ${log.itemId}<br><b>Action:</b> ${log.action}<br><b>To:</b> [${opAlias.initials}] ${opAlias.name}</div>`;
+        }
+        container.innerHTML = html || "Empty Registry.";
     }
 
     // --- MODULE D: LOCKER ---
     async function loadLocker() {
         switchLayer('layer-locker');
         const grid = document.getElementById('lockerGrid');
-        grid.innerHTML = "<p class='mono' style='color:var(--accent-cyan);'>SCANNING LOCAL NODES...</p>";
-
-        try {
-            const totalItems = await contract.getTotalItems();
-            let html = "";
-            
-            for(let i=0; i < totalItems; i++) {
-                const itemId = await contract.allItemIds(i);
-                const custodian = await contract.currentCustodian(itemId);
-                
-                if(custodian.toLowerCase() === userAddress.toLowerCase()) {
-                    const registry = await contract.evidenceRegistry(itemId);
-                    html += `
-                        <div class="grid-item" onclick="openLabPanel('${itemId}')">
-                            <span class="hologram-icon">🧊</span>
-                            <div class="item-label">${itemId}</div>
-                            <div class="case-label">${registry.caseName}</div>
-                        </div>`;
-                }
+        const total = await contract.getTotalItems();
+        let html = "";
+        for(let i=0; i<total; i++) {
+            const id = await contract.allItemIds(i);
+            const cust = await contract.currentCustodian(id);
+            if(cust.toLowerCase() === userAddress.toLowerCase()) {
+                const reg = await contract.evidenceRegistry(id);
+                html += `<div class="grid-item" onclick="openLabPanel('${id}')"><span class="hologram-icon">🧊</span><div style="font-family:'Fira Code',monospace; font-size:14px; margin-bottom:4px; font-weight:500;">${id}</div><div style="font-size:11px; color:var(--accent-cyan); text-transform:uppercase; letter-spacing:0.5px;">${reg.caseName}</div></div>`;
             }
-            grid.innerHTML = html === "" ? "<p>Vault is empty.</p>" : html;
-        } catch (e) { grid.innerHTML = "<p class='route-out'>Error compiling vault assets.</p>"; }
+        }
+        grid.innerHTML = html || "Empty Vault.";
     }
 
-    // --- MODULE D-2: LAB TECH ---
-    async function openLabPanel(itemId) {
+    // --- MODULE D-2: LAB TERMINAL ---
+    async function openLabPanel(id) {
         switchLayer('layer-lab');
-        currentActiveItemForLab = itemId;
-        document.getElementById('labItemLabel').innerText = itemId;
-        
-        document.getElementById('labAnalysis').value = "Loading data stream...";
-        document.getElementById('labEvaluation').value = "Loading data stream...";
-        document.getElementById('btnSubmitLab').style.display = "none";
-        document.getElementById('labStatusAlert').innerHTML = "Verifying clearance protocols...";
-        document.getElementById('labStatusAlert').style.borderLeftColor = "var(--text-muted)";
-
-        // OPTIMIZATION: We no longer need to scan the history logs! 
-        // We just read the lastAction directly from the V4.1 Evidence Registry.
-        const registry = await contract.evidenceRegistry(itemId);
-        document.getElementById('labAnalysis').value = registry.analysisReport;
-        document.getElementById('labEvaluation').value = registry.evaluationReport;
-
-        let isLabTech = (registry.lastAction === "Checked out for Forensic Imaging" || registry.lastAction === "Checked out for Data Analysis");
-
-        if (isLabTech) {
-            document.getElementById('labStatusAlert').innerHTML = "<span style='color:var(--success-green)'>[ CLEARANCE GRANTED ]</span> Write-access enabled for forensic modules.";
-            document.getElementById('labStatusAlert').style.borderLeftColor = "var(--success-green)";
-            document.getElementById('btnSubmitLab').style.display = "block";
-            document.getElementById('labAnalysis').readOnly = false;
-            document.getElementById('labEvaluation').readOnly = false;
-        } else {
-            document.getElementById('labStatusAlert').innerHTML = "<span style='color:var(--alert-red)'>[ CLEARANCE DENIED ]</span> Asset lacks forensic lab routing. Read-only mode enforced.";
-            document.getElementById('labStatusAlert').style.borderLeftColor = "var(--alert-red)";
-            document.getElementById('labAnalysis').readOnly = true;
-            document.getElementById('labEvaluation').readOnly = true;
-        }
+        currentActiveItemForLab = id;
+        document.getElementById('labItemLabel').innerText = id;
+        const reg = await contract.evidenceRegistry(id);
+        document.getElementById('labAnalysis').value = reg.analysisReport;
+        document.getElementById('labEvaluation').value = reg.evaluationReport;
+        const isLab = (reg.lastAction.includes("Forensic") || reg.lastAction.includes("Analysis"));
+        document.getElementById('labStatusAlert').innerText = isLab ? "[ CLEARANCE GRANTED ] Write Access Enabled." : "[ READ ONLY ] You lack current forensic custody.";
+        document.getElementById('btnSubmitLab').style.display = isLab ? "block" : "none";
+        document.getElementById('labAnalysis').readOnly = !isLab;
+        document.getElementById('labEvaluation').readOnly = !isLab;
     }
 
     document.getElementById('btnSubmitLab').addEventListener('click', async () => {
-        const analysis = document.getElementById('labAnalysis').value.trim();
-        const evalText = document.getElementById('labEvaluation').value.trim();
-        const statusText = document.getElementById('statusLab');
-
         try {
-            statusText.className = "status-box active";
-            statusText.innerText = "> Encoding matrices to blockchain...";
-            
-            const tx = await contract.submitLabReport(currentActiveItemForLab, analysis, evalText);
-            await tx.wait();
-            
-            statusText.className = "status-box active";
-            statusText.style.color = "var(--lab-purple)";
-            statusText.style.borderLeftColor = "var(--lab-purple)";
-            statusText.innerText = "[ ENCODE SUCCESSFUL ] Matrix updated globally.";
-        } catch (error) {
-            statusText.className = "status-box active error";
-            statusText.innerText = "> FATAL: " + error.message;
-        }
+            const status = document.getElementById('statusLab');
+            status.className="status-box active"; status.style.display = "block"; status.innerText = "> Encoding Matrices...";
+            const tx = await contract.submitLabReport(currentActiveItemForLab, document.getElementById('labAnalysis').value, document.getElementById('labEvaluation').value);
+            await tx.wait(); alert("Reports Encoded Globally."); status.style.display="none"; switchLayer('layer-locker');
+        } catch(e) { const status = document.getElementById('statusLab'); status.className="status-box error"; status.innerText = e.message; }
     });
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
