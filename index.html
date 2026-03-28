@@ -8,34 +8,35 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Fira+Code:wght@400;500;800&display=swap');
 
-        /* --- THEME SYSTEM: LIGHT MODE (FROSTED GLASS) --- */
+        /* --- THEME SYSTEM: LIGHT MODE (TACTICAL CLINICAL UPGRADE) --- */
         :root {
-            /* An icy-silver metallic backdrop so the glass effect actually pops */
-            --bg-env: radial-gradient(circle at 50% 0%, #e2e8f0 0%, #f8fafc 40%, #cbd5e1 100%);
+            /* 1. A deeper, cooler slate background to force the white container to pop */
+            --bg-env: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
             --bg-deep: #f8fafc; 
             
-            /* The Frosted Glass Core */
-            --glass-bg: rgba(255, 255, 255, 0.45);
-            --glass-border: rgba(255, 255, 255, 0.8); 
-            --top-border: rgba(255, 255, 255, 1);
+            /* 2. Crisper, slightly more opaque white glass */
+            --glass-bg: rgba(255, 255, 255, 0.9);
+            --glass-border: rgba(255, 255, 255, 1); 
+            --top-border: #ffffff;
             
-            /* Deep, vibrant accents that hold their edge on light backgrounds */
+            /* 3. Deepen the cyan and kill the blurry text glow */
             --accent-cyan: #0284c7; 
-            --accent-glow: rgba(2, 132, 199, 0.3); 
+            --accent-glow: rgba(2, 132, 199, 0.2); 
+            --text-glow: none; /* Disables the blur on light mode */
             
             --text-main: #0f172a; 
-            --text-muted: #64748b;
-            --alert-red: #e11d48; 
-            --success-green: #059669; 
-            --lab-purple: #7c3aed;
+            --text-muted: #475569;
+            --alert-red: #dc2626; --success-green: #059669; --lab-purple: #7c3aed;
             
-            /* Interactive elements that look like carved ice */
-            --input-bg: rgba(255, 255, 255, 0.5); 
-            --input-border: rgba(255, 255, 255, 0.9);
-            --menu-hover: rgba(255, 255, 255, 0.85); 
-            --shadow-base: rgba(15, 23, 42, 0.08);
+            /* 4. Tactile, slightly filled inputs and menu buttons so they look clickable */
+            --input-bg: #f1f5f9; 
+            --input-border: #cbd5e1;
+            --menu-hover: #e2e8f0; 
+            
+            /* 5. A sharper, darker shadow to lift the container off the slate background */
+            --shadow-base: rgba(15, 23, 42, 0.15); 
         }
-
+        
         /* --- THEME SYSTEM: DARK MODE (GLASSMORPHISM) --- */
         [data-theme="dark"] {
             --bg-env: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #030712 60%);
@@ -46,6 +47,7 @@
             --alert-red: #ff0055; --success-green: #10b981; --lab-purple: #a855f7;
             --input-bg: rgba(0, 0, 0, 0.3); --input-border: rgba(255, 255, 255, 0.08);
             --menu-hover: rgba(255, 255, 255, 0.08); --shadow-base: rgba(0, 0, 0, 0.8);
+            --text-glow: 0 0 15px var(--accent-glow);
         }
 
         body {
@@ -79,7 +81,7 @@
         .layer.active { display: block; opacity: 1; transform: translateY(0); }
 
         h1 { font-weight: 800; font-size: 32px; text-align: center; margin-bottom: 35px; color: var(--text-main); transition: 0.4s ease; }
-        h1 span { color: var(--accent-cyan); text-shadow: 0 0 15px var(--accent-glow); }
+        h1 span { color: var(--accent-cyan); text-shadow: var(--text-glow); }
         h3 { font-size: 20px; margin-bottom: 8px; font-weight: 800; color: var(--text-main); }
         p { color: var(--text-muted); font-size: 14px; line-height: 1.5; }
 
