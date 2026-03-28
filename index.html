@@ -8,16 +8,32 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Fira+Code:wght@400;500;800&display=swap');
 
-        /* --- THEME SYSTEM: LIGHT MODE (DEFAULT CLEAN ROOM) --- */
+        /* --- THEME SYSTEM: LIGHT MODE (FROSTED GLASS) --- */
         :root {
-            --bg-env: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-            --bg-deep: #e2e8f0; --glass-bg: rgba(255, 255, 255, 0.75);
-            --glass-border: rgba(255, 255, 255, 0.6); --top-border: #ffffff;
-            --accent-cyan: #0284c7; --accent-glow: rgba(2, 132, 199, 0.15); 
-            --text-main: #0f172a; --text-muted: #475569;
-            --alert-red: #dc2626; --success-green: #059669; --lab-purple: #7c3aed;
-            --input-bg: #ffffff; --input-border: #cbd5e1;
-            --menu-hover: #f1f5f9; --shadow-base: rgba(0, 0, 0, 0.05);
+            /* An icy-silver metallic backdrop so the glass effect actually pops */
+            --bg-env: radial-gradient(circle at 50% 0%, #e2e8f0 0%, #f8fafc 40%, #cbd5e1 100%);
+            --bg-deep: #f8fafc; 
+            
+            /* The Frosted Glass Core */
+            --glass-bg: rgba(255, 255, 255, 0.45);
+            --glass-border: rgba(255, 255, 255, 0.8); 
+            --top-border: rgba(255, 255, 255, 1);
+            
+            /* Deep, vibrant accents that hold their edge on light backgrounds */
+            --accent-cyan: #0284c7; 
+            --accent-glow: rgba(2, 132, 199, 0.3); 
+            
+            --text-main: #0f172a; 
+            --text-muted: #64748b;
+            --alert-red: #e11d48; 
+            --success-green: #059669; 
+            --lab-purple: #7c3aed;
+            
+            /* Interactive elements that look like carved ice */
+            --input-bg: rgba(255, 255, 255, 0.5); 
+            --input-border: rgba(255, 255, 255, 0.9);
+            --menu-hover: rgba(255, 255, 255, 0.85); 
+            --shadow-base: rgba(15, 23, 42, 0.08);
         }
 
         /* --- THEME SYSTEM: DARK MODE (GLASSMORPHISM) --- */
