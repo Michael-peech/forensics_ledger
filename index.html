@@ -354,7 +354,7 @@
 
     function logout() { location.reload(); }
 
-    // --- AUTHENTICATION & ONBOARDING FLOW ---
+    // --- AUTHENTICATION & ONBOARDING FLOW (STRICT ACCESS CONTROL) ---
     document.getElementById('connectBtn').addEventListener('click', async () => {
         try {
             await window.ethereum.request({ method: "wallet_requestPermissions", params: [{ eth_accounts: {} }] });
@@ -363,6 +363,14 @@
             signer = provider.getSigner();
             userAddress = await signer.getAddress();
             contract = new ethers.Contract(contractAddress, contractABI, signer);
+            
+            // --- THE SECURITY PATCH ---
+            // Ask the blockchain if this wallet has been authorized by the Admin
+            const userRole = await contract.operativeRoles(userAddress);
+            if (userRole == 0) {
+                // If role is 0, kick them out immediately. 
+                throw new Error("ACCESS DENIED: Clearance not found. Contact Admin.");
+            }
             
             myProfile = getAlias(userAddress);
             const pref = localStorage.getItem('aliasPref_' + userAddress);
@@ -381,7 +389,7 @@
             }
         } catch (e) { 
             console.error("WEB3 AUTH ERROR:", e); 
-            document.getElementById('authError').innerText = "Auth Failed: " + (e.message || "Unknown Error"); 
+            document.getElementById('authError').innerText = (e.message || "Unknown Error"); 
             document.getElementById('authError').style.display="block"; 
         }
     });
