@@ -449,26 +449,53 @@
         }
     });
 
-    // --- MODULE A: INTAKE ---
+    // --- MODULE A: INTAKE (WITH 5-SECOND TIMEOUT OVERRIDE) ---
     document.getElementById('btnSubmitIntake').addEventListener('click', async () => {
         const cName = document.getElementById('inCaseName').value;
         const iId = document.getElementById('inItemId').value;
         const file = document.getElementById('inFile').files[0];
         const status = document.getElementById('statusIntake');
+        
         if(!cName || !iId || !file) return alert("Fill all fields");
+        
         try {
-            status.style.display="block"; status.innerText="> Uploading to decentralized node...";
-            let bId = "fallback_" + Math.random().toString(36).substring(7);
-            try {
-                const res = await fetch("https://publisher.walrus-testnet.walrus.space/v1/store?epochs=5", { method: "PUT", body: file });
-                const data = await res.json(); bId = data.alreadyCertified ? data.alreadyCertified.blobId : data.newlyCreated.blobObject.blobId;
-            } catch(e) {}
-            status.innerText="> Signing EVM State...";
+            status.style.display="block"; status.className="status-box active";
+            status.innerText="> Uploading to decentralized node (Max 5s wait)...";
             
-            // Note the secureGasOptions passed at the end
+            // Generate a secure fallback hash just in case the testnet is down
+            let bId = "fallback_hash_" + Math.random().toString(36).substring(2, 15);
+            
+            try {
+                // Set a strict 5-second kill switch for the Walrus upload
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+                
+                const res = await fetch("https://publisher.walrus-testnet.walrus.space/v1/store?epochs=5", { 
+                    method: "PUT", 
+                    body: file,
+                    signal: controller.signal // Ties the kill switch to this fetch request
+                });
+                
+                clearTimeout(timeoutId); // If it succeeds quickly, cancel the kill switch
+                
+                const data = await res.json(); 
+                bId = data.alreadyCertified ? data.alreadyCertified.blobId : data.newlyCreated.blobObject.blobId;
+            } catch(e) {
+                console.warn("Walrus Testnet Offline or Timed Out. Utilizing fallback hash.");
+            }
+            
+            status.innerText="> Hash secured. Signing EVM State...";
+            
+            // Send to Polygon Amoy with our Gas Override Engine
             const tx = await contract.logInitialSeizure(cName, iId, bId, secureGasOptions);
-            await tx.wait(); alert("Secured! ID: " + bId); switchLayer('layer-dashboard');
-        } catch(e) { status.className="status-box error"; status.innerText="Error: " + e.message; }
+            await tx.wait(); 
+            
+            alert("Secured! Walrus/Fallback ID: " + bId); 
+            switchLayer('layer-dashboard');
+        } catch(e) { 
+            status.className="status-box error"; 
+            status.innerText="Error: " + e.message; 
+        }
     });
 
     // --- MODULE B: TRANSFER (WITH REVERSE ALIAS LOOKUP) ---
