@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Forensics Ledger V4.3</title>
+    <title>CYB-305: Forensics Ledger V4.3 (Enterprise Edition)</title>
     
     <!-- 1. Ethers.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
@@ -14,7 +14,14 @@
 <body>
 
 <div class="container">
-    <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Optics">🌗</button>
+    <!-- UPGRADED DYNAMIC THEME TOGGLE -->
+    <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Optics">
+        <!-- Sun Icon (Displays in Light Mode) -->
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="4"></line><line x1="12" y1="20" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="6.34" y2="6.34"></line><line x1="17.66" y1="17.66" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="4" y2="12"></line><line x1="20" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="6.34" y2="17.66"></line><line x1="17.66" y1="6.34" x2="19.78" y2="4.22"></line></svg>
+        
+        <!-- Moon Icon (Displays in Dark Mode) -->
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+    </button>
 
     <h1>Chain Of Custody <span>Forensics Ledger</span></h1>
 
