@@ -300,8 +300,11 @@
             const cust = await contract.currentCustodian(id);
             if(cust.toLowerCase() === userAddress.toLowerCase()) {
                 const reg = await contract.evidenceRegistry(id);
-                // Holographic Cube injected here
-                html += `<div class="grid-item" onclick="openLabPanel('${id}')"><div class="hologram-icon">⬢</div><div style="font-family:'Fira Code',monospace; font-size:14px; margin-bottom:4px; font-weight:700;">${id}</div><div style="font-size:11px; color:var(--accent-cyan); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">${reg.caseName}</div></div>`;
+                
+                // True 3D Holographic SVG Cube
+                const svgCube = `<svg class="hologram-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="var(--accent-glow)" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>`;
+                
+                html += `<div class="grid-item" onclick="openLabPanel('${id}')">${svgCube}<div style="font-family:'Fira Code',monospace; font-size:14px; margin-bottom:4px; font-weight:700;">${id}</div><div style="font-size:11px; color:var(--accent-cyan); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">${reg.caseName}</div></div>`;
             }
         }
         grid.innerHTML = html || "Empty Vault.";
