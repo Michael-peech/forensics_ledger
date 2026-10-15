@@ -190,11 +190,13 @@ input[type="file"]::-webkit-file-upload-button:hover { transform: scale(1.05); }
 /* --- HOLOGRAPHIC CUBE ANIMATIONS --- */
 .hologram-icon { 
     position: relative; 
-    font-size: 85px; 
+    width: 85px; 
+    height: 85px;
     color: var(--accent-cyan); 
     margin-bottom: 12px; 
     display: inline-block; 
-    text-shadow: 0 0 20px var(--accent-glow), 0 0 45px var(--accent-cyan); 
+    /* SVG requires drop-shadow instead of text-shadow for precise glowing outlines */
+    filter: drop-shadow(0 0 15px var(--accent-glow)) drop-shadow(0 0 25px var(--accent-cyan));
     animation: float 4s ease-in-out infinite; 
 }
 
