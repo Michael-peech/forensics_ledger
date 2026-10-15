@@ -3,8 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CYB-305: Forensics Ledger V4.2 (Enterprise Edition)</title>
+    <title>Forensics Ledger V4.3</title>
+    
+    <!-- 1. Ethers.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    
+    <!-- 2. External CSS Link -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -83,6 +88,7 @@
     <div id="layer-history" class="layer"><button class="btn-back" onclick="switchLayer('layer-dashboard')">← Dashboard</button><h3>Immutable History</h3><div id="historyContainer" style="max-height: 400px; overflow-y: auto; padding-right: 10px;"></div></div>
     <div id="layer-locker" class="layer"><button class="btn-back" onclick="switchLayer('layer-dashboard')">← Dashboard</button><h3>Evidence Locker</h3><div id="lockerGrid" class="grid-container"></div></div>
     <div id="layer-lab" class="layer"><button class="btn-back" onclick="switchLayer('layer-locker')">← Locker</button><h3>Forensics Terminal</h3><p class="mono" style="color: var(--accent-cyan); font-weight: 600;">Target: <span id="labItemLabel" style="color: var(--text-main);"></span></p><div id="labStatusAlert" style="padding:12px; border-radius:8px; font-size:13px; margin-bottom:20px; border: 1px solid var(--input-border); font-weight: 600;"></div><textarea id="labAnalysis" placeholder="ANALYSIS LOG..."></textarea><textarea id="labEvaluation" placeholder="EVALUATION LOG..."></textarea><button id="btnSubmitLab" class="btn-primary" style="background:var(--lab-purple); color:#ffffff; box-shadow: 0 10px 20px -10px rgba(124, 58, 237, 0.4);">Encode Reports</button><div id="statusLab" class="status-box"></div></div>
+    
     <div id="layer-help" class="layer">
         <button class="btn-back" onclick="switchLayer('layer-dashboard')">← Dashboard</button>
         <h3>System Protocol Guide</h3>
@@ -131,20 +137,9 @@
         </div>
     </div>
 
+</div>
+
+<!-- 3. External JS Link (Must remain at the bottom) -->
+<script src="app.js"></script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
