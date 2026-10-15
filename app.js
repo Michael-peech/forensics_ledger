@@ -300,7 +300,8 @@
             const cust = await contract.currentCustodian(id);
             if(cust.toLowerCase() === userAddress.toLowerCase()) {
                 const reg = await contract.evidenceRegistry(id);
-                html += `<div class="grid-item" onclick="openLabPanel('${id}')"><span class="hologram-icon">🧊</span><div style="font-family:'Fira Code',monospace; font-size:14px; margin-bottom:4px; font-weight:700;">${id}</div><div style="font-size:11px; color:var(--accent-cyan); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">${reg.caseName}</div></div>`;
+                // Holographic Cube injected here
+                html += `<div class="grid-item" onclick="openLabPanel('${id}')"><div class="hologram-icon">⬢</div><div style="font-family:'Fira Code',monospace; font-size:14px; margin-bottom:4px; font-weight:700;">${id}</div><div style="font-size:11px; color:var(--accent-cyan); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">${reg.caseName}</div></div>`;
             }
         }
         grid.innerHTML = html || "Empty Vault.";
