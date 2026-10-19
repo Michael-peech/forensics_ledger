@@ -20,8 +20,8 @@
 
     // --- UNIVERSAL GAS OVERRIDE ENGINE ---
     const secureGasOptions = { 
-    maxPriorityFeePerGas: ethers.utils.parseUnits('26', 'gwei'),
-    maxFeePerGas: ethers.utils.parseUnits('28', 'gwei')
+        maxPriorityFeePerGas: ethers.utils.parseUnits('26', 'gwei'),
+        maxFeePerGas: ethers.utils.parseUnits('28', 'gwei')
     };
 
     // --- GEOGRAPHIC MONOGRAM COMBINATOR (FIXED MATH LOGIC) ---
@@ -113,6 +113,71 @@
             badge.innerText = `ID: ${userAddress.substring(0,8)}...`;
             decodeBtn.style.display = 'inline-block';
         }
+    }
+
+    // --- MODULE F: OPERATIVE DOSSIER ---
+    async function loadProfile() {
+        switchLayer('layer-profile');
+        
+        // 1. Populate Basic Identity
+        document.getElementById('profInitials').innerText = myProfile.initials;
+        document.getElementById('profName').innerText = myProfile.name;
+        document.getElementById('profAddress').innerText = userAddress;
+        
+        // 2. Query Blockchain for Active Clearance
+        const roleId = await contract.operativeRoles(userAddress);
+        let roleName = "Unknown Clearance";
+        let roleColor = "var(--text-muted)";
+        let roleBg = "transparent";
+        
+        if (roleId == 1) { roleName = "Level 1: Field Investigator"; roleColor = "var(--accent-cyan)"; roleBg = "rgba(2, 132, 199, 0.1)"; }
+        else if (roleId == 2) { roleName = "Level 2: Secure Storage Clerk"; roleColor = "#f59e0b"; roleBg = "rgba(245, 158, 11, 0.1)"; }
+        else if (roleId == 3) { roleName = "Level 3: Lab Technician"; roleColor = "var(--lab-purple)"; roleBg = "rgba(124, 58, 237, 0.1)"; }
+        else if (roleId == 4) { roleName = "Level 4: Legal Liaison"; roleColor = "var(--alert-red)"; roleBg = "rgba(220, 38, 38, 0.1)"; }
+        
+        // Check if Admin
+        const adminAddr = await contract.admin();
+        if (userAddress.toLowerCase() === adminAddr.toLowerCase()) {
+            roleName = "System Administrator (Lvl " + roleId + ")";
+        }
+
+        const roleBadge = document.getElementById('profRole');
+        roleBadge.innerText = roleName;
+        roleBadge.style.color = roleColor;
+        roleBadge.style.borderColor = roleColor;
+        roleBadge.style.background = roleBg;
+
+        // 3. Tally Ledger Metrics
+        let seizures = 0, transfersOut = 0, transfersIn = 0, vaultLoad = 0;
+        
+        // Calculate current active vault load
+        const totalItems = await contract.getTotalItems();
+        for(let i=0; i<totalItems; i++) {
+            const id = await contract.allItemIds(i);
+            const cust = await contract.currentCustodian(id);
+            if(cust.toLowerCase() === userAddress.toLowerCase()) {
+                vaultLoad++;
+            }
+        }
+
+        // Tally historical actions
+        const totalLogs = await contract.getTotalLogs();
+        for(let i=0; i<totalLogs; i++) {
+            const log = await contract.evidenceHistory(i);
+            const isToMe = (log.to.toLowerCase() === userAddress.toLowerCase());
+            const isFromMe = (log.from.toLowerCase() === userAddress.toLowerCase());
+            const isInitial = log.action.toLowerCase().includes("initial") || log.from === "0x0000000000000000000000000000000000000000";
+
+            if (isToMe && isInitial) seizures++;
+            else if (isToMe && !isInitial) transfersIn++;
+            if (isFromMe) transfersOut++;
+        }
+
+        // 4. Inject Metrics into UI
+        document.getElementById('statSeizures').innerText = seizures;
+        document.getElementById('statTransfers').innerText = transfersOut;
+        document.getElementById('statReceived').innerText = transfersIn;
+        document.getElementById('statVault').innerText = vaultLoad;
     }
 
     // --- V4.2 CASCADING DATALIST (RBAC) ---
@@ -231,7 +296,6 @@
             
             status.innerText="> Submitting to Blockchain...";
             
-            // Note the secureGasOptions passed at the end
             const tx = await contract.transferCustody(targetId, destAddress, act, secureGasOptions);
             await tx.wait(); alert("Transferred!"); switchLayer('layer-dashboard');
         } catch(e) { status.className="status-box error"; status.innerText=e.message; }
@@ -249,11 +313,7 @@
             
             for(let i = total - 1; i >= 0; i--) {
                 const log = await contract.evidenceHistory(i);
-                
-                // Fetch the registry to get the Case Name and File Hash (Walrus ID)
                 const reg = await contract.evidenceRegistry(log.itemId);
-                
-                // Format the UNIX timestamp into a human-readable local date
                 const dateStr = new Date(log.timestamp * 1000).toLocaleString();
                 
                 const toAlias = getAlias(log.to);
@@ -264,7 +324,6 @@
                 const actionTargetLabel = isInitial ? "By:" : "To:";
                 const fromRow = isInitial ? "" : `<b>From:</b> <span style="color:var(--accent-cyan)">[${fromAlias.initials}]</span> ${fromAlias.name}<br>`;
 
-                // Build the Expandable Card
                 html += `
                 <div class="history-card" onclick="this.classList.toggle('open')">
                     <div class="history-summary">
@@ -339,7 +398,6 @@
             const status = document.getElementById('statusLab');
             status.className="status-box active"; status.style.display = "block"; status.innerText = "> Encoding Matrices...";
             
-            // Note the secureGasOptions passed at the end
             const tx = await contract.submitLabReport(currentActiveItemForLab, document.getElementById('labAnalysis').value, document.getElementById('labEvaluation').value, secureGasOptions);
             await tx.wait(); alert("Reports Encoded Globally."); status.style.display="none"; switchLayer('layer-locker');
         } catch(e) { const status = document.getElementById('statusLab'); status.className="status-box error"; status.innerText = e.message; }
