@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CYB-305: Forensics Ledger V4.3 (Enterprise Edition)</title>
+    <title>Forensics Ledger V4.3</title>
     
     <!-- 1. Ethers.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
@@ -23,7 +23,7 @@
         <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
     </button>
 
-    <h1>Chain Of Custody <span>Forensics Ledger</span></h1>
+    <h1>Chain Of Custody <span> Forensics Ledger</span></h1>
 
     <div id="layer-auth" class="layer active text-center">
         <p style="margin-bottom: 35px; font-weight: 500;">Initiate secure handshake to access forensics mainframe.</p>
@@ -43,8 +43,9 @@
     </div>
 
     <div id="layer-dashboard" class="layer">
-        <div class="text-center">
-            <div id="userBadge" class="user-badge mono">ID: 0x...</div>
+        <!-- Upgraded clickable badge aligned to the left -->
+        <div style="display: flex; justify-content: flex-start; align-items: center; margin-bottom: 25px;">
+            <div id="userBadge" class="user-badge mono" onclick="loadProfile()" title="View Operative Dossier" style="margin-bottom: 0;">ID: 0x...</div>
             <button id="decodeBtn" class="decode-btn" onclick="decodeAliasLater()">🧬 Decode</button>
         </div>
 
@@ -54,6 +55,44 @@
         <button class="btn-menu" onclick="loadLocker()" style="border-left: 4px solid var(--success-green);"><span>D. My Evidence Locker</span> <span style="color:var(--accent-cyan); font-weight: 800;">>></span></button>
         <button class="btn-menu" onclick="switchLayer('layer-help')" style="border-left: 4px solid var(--lab-purple);"><span>E. System Guide</span> <span style="color:var(--accent-cyan); font-weight: 800;">>></span></button>
         <div class="text-center"><button onclick="logout()" style="background:transparent; border:none; color:var(--alert-red); margin-top:30px; cursor:pointer; font-weight:800; letter-spacing: 1px;">[ TERMINATE SESSION ]</button></div>
+    </div>
+
+    <!-- NEW OPERATIVE DOSSIER (PROFILE) LAYER -->
+    <div id="layer-profile" class="layer">
+        <button class="btn-back" onclick="switchLayer('layer-dashboard')">← Dashboard</button>
+        <h3>Operative Dossier</h3>
+        
+        <!-- Identity Header -->
+        <div class="profile-header">
+            <div class="profile-avatar" id="profInitials"></div>
+            <div class="profile-info">
+                <div class="profile-name" id="profName"></div>
+                <div class="profile-address mono" id="profAddress"></div>
+                <div class="profile-role" id="profRole"></div>
+            </div>
+        </div>
+
+        <h4 style="margin-top: 32px; margin-bottom: 12px; color: var(--accent-cyan);">Operational Service Record</h4>
+        
+        <!-- Cryptographic Ledger Metrics -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="statSeizures">0</div>
+                <div class="stat-label">Initial Seizures</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statTransfers">0</div>
+                <div class="stat-label">Transfers Executed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statReceived">0</div>
+                <div class="stat-label">Assets Received</div>
+            </div>
+            <div class="stat-card" style="border-color: var(--accent-cyan); box-shadow: 0 0 15px var(--accent-glow);">
+                <div class="stat-value" id="statVault" style="color: var(--accent-cyan);">0</div>
+                <div class="stat-label">Active Vault Load</div>
+            </div>
+        </div>
     </div>
 
     <div id="layer-intake" class="layer">
