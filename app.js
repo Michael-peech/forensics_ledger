@@ -1,404 +1,410 @@
-// --- THEME ENGINE INITIALIZATION ---
-    const savedTheme = localStorage.getItem('cyb305_theme') || 'light';
-    document.documentElement.setAttribute('data-theme', savedTheme);
+// --- CONFIGURATION & ABI ---
+const CONTRACT_ADDRESS = "0xF8879C91342a9d4330974Cb678F36Db00Ace1b92";
+const POLYGON_AMOY_CHAIN_ID = "0x13882"; 
 
-    function toggleTheme() {
-        const currentTheme = document.documentElement.getAttribute('data-theme');
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', newTheme);
-        localStorage.setItem('cyb305_theme', newTheme);
+const ABI = [
+    "function isAdmin(address) view returns (bool)",
+    "function operativeRoles(address) view returns (uint8)",
+    "function operativeUsernames(address) view returns (string)",
+    "function operativeBadges(address) view returns (uint256)",
+    "function registerUsername(string)",
+    "function addAdmin(address)",
+    "function authorizeNewOperative(address, uint8)",
+    "function logInitialSeizure(string, string, string)",
+    "function transferCustody(string, address, string)",
+    "function currentCustodian(string) view returns (address)",
+    "event UsernameRegistered(address indexed operative, string username)",
+    "event EvidenceLogged(string indexed itemId, string caseName, address indexed custodian, uint256 timestamp)",
+    "event CustodyTransferred(string indexed itemId, address from, address indexed to, string action, uint256 timestamp)"
+];
+
+// --- STATE VARIABLES ---
+let provider, signer, contract;
+let userAddress = "";
+let userRole = 0;
+let isUserAdmin = false;
+let operativeDirectory = new Map(); // Maps username -> address
+let reverseDirectory = new Map(); // Maps address -> username
+
+// Session Security
+let sessionTimeout;
+let autoLockMinutes = 0;
+
+// ==========================================================================
+// 1. INITIALIZATION & AUTHENTICATION
+// ==========================================================================
+
+async function initWeb3() {
+    if (!window.ethereum) {
+        showAuthError("CRITICAL: Web3 Provider (MetaMask) not detected.");
+        return;
     }
 
-    // --- HARDCODED V4.3 CONTRACT ADDRESS ---
-    const contractAddress = "0x6c5a774cf5039f36539b06193d234b745a5a6f0e"; 
-    
-    // V4.2 ABI 
-    const contractABI = [{"inputs":[],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"string","name":"itemId","type":"string"},{"indexed":false,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"string","name":"action","type":"string"},{"indexed":false,"internalType":"uint256","name":"timestamp","type":"uint256"}],"name":"CustodyTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"string","name":"itemId","type":"string"},{"indexed":false,"internalType":"string","name":"caseName","type":"string"},{"indexed":true,"internalType":"address","name":"custodian","type":"address"},{"indexed":false,"internalType":"uint256","name":"timestamp","type":"uint256"}],"name":"EvidenceLogged","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"string","name":"itemId","type":"string"},{"indexed":true,"internalType":"address","name":"tech","type":"address"},{"indexed":false,"internalType":"uint256","name":"timestamp","type":"uint256"}],"name":"LabReportUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"operative","type":"address"},{"indexed":false,"internalType":"uint8","name":"role","type":"uint8"}],"name":"OperativeAuthorized","type":"event"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"allItemIds","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"admin","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_operative","type":"address"},{"internalType":"uint8","name":"_roleId","type":"uint8"}],"name":"authorizeOperative","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"","type":"string"}],"name":"currentCustodian","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"evidenceHistory","outputs":[{"internalType":"string","name":"itemId","type":"string"},{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"string","name":"action","type":"string"},{"internalType":"uint256","name":"timestamp","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"","type":"string"}],"name":"evidenceRegistry","outputs":[{"internalType":"string","name":"caseName","type":"string"},{"internalType":"string","name":"itemId","type":"string"},{"internalType":"string","name":"walrusBlobId","type":"string"},{"internalType":"string","name":"analysisReport","type":"string"},{"internalType":"string","name":"evaluationReport","type":"string"},{"internalType":"string","name":"lastAction","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getAllOperatives","outputs":[{"internalType":"address[]","name":"","type":"address[]"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getTotalItems","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getTotalLogs","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"isRegistered","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"","type":"string"}],"name":"itemExists","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"_caseName","type":"string"},{"internalType":"string","name":"_itemId","type":"string"},{"internalType":"string","name":"_walrusBlobId","type":"string"}],"name":"logInitialSeizure","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"operativeRoles","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"registeredOperatives","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"_itemId","type":"string"},{"internalType":"string","name":"_analysis","type":"string"},{"internalType":"string","name":"_evaluation","type":"string"}],"name":"submitLabReport","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_itemId","type":"string"},{"internalType":"address","name":"_newCustodian","type":"address"},{"internalType":"string","name":"_action","type":"string"}],"name":"transferCustody","outputs":[],"stateMutability":"nonpayable","type":"function"}];
-
-    let provider, signer, contract, userAddress, myProfile;
-    let aliasReverseMap = {}; 
-
-    // --- UNIVERSAL GAS OVERRIDE ENGINE ---
-    const secureGasOptions = { 
-        maxPriorityFeePerGas: ethers.utils.parseUnits('26', 'gwei'),
-        maxFeePerGas: ethers.utils.parseUnits('28', 'gwei')
-    };
-
-    // --- GEOGRAPHIC MONOGRAM COMBINATOR (FIXED MATH LOGIC) ---
-    const animals = ["Gorilla", "Platypus", "Wolf", "Raven", "Kraken", "Viper", "Panther", "Falcon", "Mantis", "Shark", "Jackal", "Fox", "Bear", "Owl", "Cobra"];
-    const locations = ["Kyoto", "Brazil", "Texas", "Madagascar", "Cairo", "London", "Dubai", "Sydney", "Mumbai", "Paris", "Toronto", "Berlin", "Seoul", "Rome", "Lagos"];
-
-    function getAlias(address) {
-        if (!address || address === "0x0000000000000000000000000000000000000000") return { name: "Origin Node", initials: "ON" };
+    try {
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = provider.getSigner();
+        userAddress = await signer.getAddress();
         
-        // Splits the hex safely to prevent negative bitwise results
-        const animSeed = parseInt(address.substring(2, 8), 16);
-        const locSeed = parseInt(address.substring(8, 14), 16); 
-        
-        const animal = animals[animSeed % animals.length];
-        const loc = locations[locSeed % locations.length];
-        
-        return { name: `Agent ${animal} of ${loc}`, initials: `${animal.charAt(0)}${loc.charAt(0)}` };
-    }
-
-    // --- FIXED LAYER SWITCHING (PREVENTS OVERLAPPING) ---
-    function switchLayer(layerId) {
-        document.querySelectorAll('.layer').forEach(el => el.classList.remove('active'));
-        
-        // Explicitly banish onboarding so it doesn't stack
-        document.getElementById('layer-onboarding').classList.remove('active'); 
-        document.getElementById('layer-onboarding').style.display = 'none';
-
-        document.getElementById(layerId).classList.add('active');
-        
-        if(layerId === 'layer-onboarding') {
-            document.getElementById('layer-onboarding').classList.add('active');
-            document.getElementById('layer-onboarding').style.display = 'flex';
-        }
-    }
-
-    function logout() { location.reload(); }
-
-    // --- AUTHENTICATION & ONBOARDING FLOW (STRICT ACCESS CONTROL) ---
-    document.getElementById('connectBtn').addEventListener('click', async () => {
-        try {
-            await window.ethereum.request({ method: "wallet_requestPermissions", params: [{ eth_accounts: {} }] });
-            provider = new ethers.providers.Web3Provider(window.ethereum);
-            await provider.send("eth_requestAccounts", []);
-            signer = provider.getSigner();
-            userAddress = await signer.getAddress();
-            contract = new ethers.Contract(contractAddress, contractABI, signer);
-            
-            // --- THE SECURITY PATCH ---
-            // Ask the blockchain if this wallet has been authorized by the Admin
-            const userRole = await contract.operativeRoles(userAddress);
-            if (userRole == 0) {
-                // If role is 0, kick them out immediately. 
-                throw new Error("ACCESS DENIED: Clearance not found. Contact Admin.");
-            }
-            
-            myProfile = getAlias(userAddress);
-            const pref = localStorage.getItem('aliasPref_' + userAddress);
-
-            if (!pref) {
-                switchLayer('layer-onboarding');
-                setTimeout(() => {
-                    document.getElementById('onboardConsole').style.display = 'none';
-                    document.getElementById('onboardReveal').style.display = 'block';
-                    document.getElementById('modalAvatar').innerText = myProfile.initials;
-                    document.getElementById('modalName').innerText = myProfile.name;
-                }, 2000);
-            } else {
-                updateBadgeDisplay(pref);
-                switchLayer('layer-dashboard');
-            }
-        } catch (e) { 
-            console.error("WEB3 AUTH ERROR:", e); 
-            document.getElementById('authError').innerText = (e.message || "Unknown Error"); 
-            document.getElementById('authError').style.display="block"; 
-        }
-    });
-
-    function acceptAlias() { localStorage.setItem('aliasPref_' + userAddress, 'revealed'); updateBadgeDisplay('revealed'); switchLayer('layer-dashboard'); }
-    function skipAlias() { localStorage.setItem('aliasPref_' + userAddress, 'raw'); updateBadgeDisplay('raw'); switchLayer('layer-dashboard'); }
-    function decodeAliasLater() { acceptAlias(); }
-
-    function updateBadgeDisplay(pref) {
-        const badge = document.getElementById('userBadge');
-        const decodeBtn = document.getElementById('decodeBtn');
-        if (pref === 'revealed') {
-            badge.innerHTML = `<div class="mini-shield">${myProfile.initials}</div> ${myProfile.name}`;
-            decodeBtn.style.display = 'none';
-        } else {
-            badge.innerText = `ID: ${userAddress.substring(0,8)}...`;
-            decodeBtn.style.display = 'inline-block';
-        }
-    }
-
-    // --- MODULE F: OPERATIVE DOSSIER ---
-    async function loadProfile() {
-        switchLayer('layer-profile');
-        
-        // 1. Populate Basic Identity
-        document.getElementById('profInitials').innerText = myProfile.initials;
-        document.getElementById('profName').innerText = myProfile.name;
-        document.getElementById('profAddress').innerText = userAddress;
-        
-        // 2. Query Blockchain for Active Clearance
-        const roleId = await contract.operativeRoles(userAddress);
-        let roleName = "Unknown Clearance";
-        let roleColor = "var(--text-muted)";
-        let roleBg = "transparent";
-        
-        if (roleId == 1) { roleName = "Level 1: Field Investigator"; roleColor = "var(--accent-cyan)"; roleBg = "rgba(2, 132, 199, 0.1)"; }
-        else if (roleId == 2) { roleName = "Level 2: Secure Storage Clerk"; roleColor = "#f59e0b"; roleBg = "rgba(245, 158, 11, 0.1)"; }
-        else if (roleId == 3) { roleName = "Level 3: Lab Technician"; roleColor = "var(--lab-purple)"; roleBg = "rgba(124, 58, 237, 0.1)"; }
-        else if (roleId == 4) { roleName = "Level 4: Legal Liaison"; roleColor = "var(--alert-red)"; roleBg = "rgba(220, 38, 38, 0.1)"; }
-        
-        // Check if Admin
-        const adminAddr = await contract.admin();
-        if (userAddress.toLowerCase() === adminAddr.toLowerCase()) {
-            roleName = "System Administrator (Lvl " + roleId + ")";
-        }
-
-        const roleBadge = document.getElementById('profRole');
-        roleBadge.innerText = roleName;
-        roleBadge.style.color = roleColor;
-        roleBadge.style.borderColor = roleColor;
-        roleBadge.style.background = roleBg;
-
-        // 3. Tally Ledger Metrics
-        let seizures = 0, transfersOut = 0, transfersIn = 0, vaultLoad = 0;
-        
-        // Calculate current active vault load
-        const totalItems = await contract.getTotalItems();
-        for(let i=0; i<totalItems; i++) {
-            const id = await contract.allItemIds(i);
-            const cust = await contract.currentCustodian(id);
-            if(cust.toLowerCase() === userAddress.toLowerCase()) {
-                vaultLoad++;
-            }
-        }
-
-        // Tally historical actions
-        const totalLogs = await contract.getTotalLogs();
-        for(let i=0; i<totalLogs; i++) {
-            const log = await contract.evidenceHistory(i);
-            const isToMe = (log.to.toLowerCase() === userAddress.toLowerCase());
-            const isFromMe = (log.from.toLowerCase() === userAddress.toLowerCase());
-            const isInitial = log.action.toLowerCase().includes("initial") || log.from === "0x0000000000000000000000000000000000000000";
-
-            if (isToMe && isInitial) seizures++;
-            else if (isToMe && !isInitial) transfersIn++;
-            if (isFromMe) transfersOut++;
-        }
-
-        // 4. Inject Metrics into UI
-        document.getElementById('statSeizures').innerText = seizures;
-        document.getElementById('statTransfers').innerText = transfersOut;
-        document.getElementById('statReceived').innerText = transfersIn;
-        document.getElementById('statVault').innerText = vaultLoad;
-    }
-
-    // --- V4.2 CASCADING DATALIST (RBAC) ---
-    document.getElementById('trAction').addEventListener('change', async (e) => {
-        const action = e.target.value;
-        const inputField = document.getElementById('trCustodian');
-        const datalist = document.getElementById('operativeList');
-        inputField.disabled = false;
-        inputField.placeholder = "Querying Blockchain Roster...";
-        datalist.innerHTML = "";
-        aliasReverseMap = {}; 
-
-        try {
-            let reqRole = 0;
-            if (action.includes("Secure Storage")) reqRole = 2; 
-            else if (action.includes("Forensic") || action.includes("Analysis")) reqRole = 3; 
-            else if (action.includes("Legal Review")) reqRole = 4; 
-
-            const roster = await contract.getAllOperatives();
-            
-            for (let i = 0; i < roster.length; i++) {
-                const opAddress = roster[i];
-                const opRole = await contract.operativeRoles(opAddress);
-                
-                if (opRole == reqRole || reqRole == 0) { 
-                    const opAlias = getAlias(opAddress);
-                    const displayName = `[${opAlias.initials}] ${opAlias.name}`;
-                    
-                    const option = document.createElement('option');
-                    option.value = displayName; 
-                    datalist.appendChild(option);
-                    aliasReverseMap[displayName] = opAddress;
-                }
-            }
-            inputField.placeholder = "2. Select Target Operative or paste 0x...";
-            inputField.value = "";
-        } catch (error) {
-            inputField.placeholder = "Directory Offline. Paste Raw 0x...";
-        }
-    });
-
-    // --- MODULE A: INTAKE (WITH 5-SECOND TIMEOUT OVERRIDE) ---
-    document.getElementById('btnSubmitIntake').addEventListener('click', async () => {
-        const cName = document.getElementById('inCaseName').value;
-        const iId = document.getElementById('inItemId').value;
-        const file = document.getElementById('inFile').files[0];
-        const status = document.getElementById('statusIntake');
-        
-        if(!cName || !iId || !file) return alert("Fill all fields");
-        
-        try {
-            status.style.display="block"; status.className="status-box active";
-            status.innerText="> Uploading to decentralized node (Max 5s wait)...";
-            
-            // Generate a secure fallback hash just in case the testnet is down
-            let bId = "fallback_hash_" + Math.random().toString(36).substring(2, 15);
-            
+        // Enforce Polygon Amoy Testnet
+        const network = await provider.getNetwork();
+        if (`0x${network.chainId.toString(16)}` !== POLYGON_AMOY_CHAIN_ID) {
             try {
-                // Set a strict 5-second kill switch for the Walrus upload
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 5000);
-                
-                const res = await fetch("https://publisher.walrus-testnet.walrus.space/v1/store?epochs=5", { 
-                    method: "PUT", 
-                    body: file,
-                    signal: controller.signal // Ties the kill switch to this fetch request
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: POLYGON_AMOY_CHAIN_ID }],
                 });
-                
-                clearTimeout(timeoutId); // If it succeeds quickly, cancel the kill switch
-                
-                const data = await res.json(); 
-                bId = data.alreadyCertified ? data.alreadyCertified.blobId : data.newlyCreated.blobObject.blobId;
-            } catch(e) {
-                console.warn("Walrus Testnet Offline or Timed Out. Utilizing fallback hash.");
+            } catch (switchError) {
+                showAuthError("Please manually switch MetaMask to the Polygon Amoy network.");
+                return;
             }
-            
-            status.innerText="> Hash secured. Signing EVM State...";
-            
-            // Send to Polygon Amoy with our Gas Override Engine
-            const tx = await contract.logInitialSeizure(cName, iId, bId, secureGasOptions);
-            await tx.wait(); 
-            
-            alert("Secured! Walrus/Fallback ID: " + bId); 
-            switchLayer('layer-dashboard');
-        } catch(e) { 
-            status.className="status-box error"; 
-            status.innerText="Error: " + e.message; 
         }
-    });
 
-    // --- MODULE B: TRANSFER (WITH REVERSE ALIAS LOOKUP) ---
-    document.getElementById('btnSubmitTransfer').addEventListener('click', async () => {
-        const search = document.getElementById('trSearch').value;
-        const wId = document.getElementById('trWalrusId').value;
-        const rawInput = document.getElementById('trCustodian').value;
-        const act = document.getElementById('trAction').value;
-        const status = document.getElementById('statusTransfer');
-        try {
-            status.className="status-box active"; status.style.display="block"; status.innerText="> Verifying...";
-            
-            let destAddress = rawInput;
-            if (aliasReverseMap[rawInput]) {
-                destAddress = aliasReverseMap[rawInput]; 
-            } else if (!rawInput.startsWith("0x") || rawInput.length !== 42) {
-                throw new Error("Invalid Target. Select from directory or input raw 0x address.");
-            }
+        contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+        await authenticateIdentity();
 
-            const total = await contract.getTotalItems();
-            let targetId = null;
-            for(let i=0; i<total; i++) {
-                const id = await contract.allItemIds(i);
-                const reg = await contract.evidenceRegistry(id);
-                if(reg.walrusBlobId === wId && (id === search || reg.caseName === search)) { targetId = id; break; }
-            }
-            if(!targetId) throw new Error("Integrity Mismatch. Hash rejected.");
-            
-            status.innerText="> Submitting to Blockchain...";
-            
-            const tx = await contract.transferCustody(targetId, destAddress, act, secureGasOptions);
-            await tx.wait(); alert("Transferred!"); switchLayer('layer-dashboard');
-        } catch(e) { status.className="status-box error"; status.innerText=e.message; }
-    });
-
-    // --- MODULE C: HISTORY (EXPANDABLE UX) ---
-    async function loadHistory() {
-        switchLayer('layer-history');
-        const container = document.getElementById('historyContainer');
-        container.innerHTML = "<div class='text-center' style='padding: 20px; font-family: monospace; color: var(--accent-cyan);'>> Querying Blockchain Ledgers...</div>";
-        
-        try {
-            const total = await contract.getTotalLogs();
-            let html = "";
-            
-            for(let i = total - 1; i >= 0; i--) {
-                const log = await contract.evidenceHistory(i);
-                const reg = await contract.evidenceRegistry(log.itemId);
-                const dateStr = new Date(log.timestamp * 1000).toLocaleString();
-                
-                const toAlias = getAlias(log.to);
-                const fromAlias = getAlias(log.from);
-                
-                // Smart Logic: "By" vs "To" based on whether it's an initial seizure
-                const isInitial = log.action.toLowerCase().includes("initial") || log.from === "0x0000000000000000000000000000000000000000";
-                const actionTargetLabel = isInitial ? "By:" : "To:";
-                const fromRow = isInitial ? "" : `<b>From:</b> <span style="color:var(--accent-cyan)">[${fromAlias.initials}]</span> ${fromAlias.name}<br>`;
-
-                html += `
-                <div class="history-card" onclick="this.classList.toggle('open')">
-                    <div class="history-summary">
-                        <span><span style="color:var(--text-muted); font-size:11px;">${dateStr.split(',')[0]}</span> &nbsp; ${log.itemId} <span style="color:var(--accent-cyan)">//</span> ${log.action}</span>
-                        <span class="expand-icon">>></span>
-                    </div>
-                    <div class="history-details">
-                        <b>Timestamp:</b> ${dateStr}<br>
-                        <b>Case Name:</b> ${reg.caseName}<br>
-                        <b>File Hash (Walrus ID):</b> <span class="mono" style="word-break: break-all; font-size: 11px;">${reg.walrusBlobId}</span><br>
-                        <div style="margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.03); border-radius: 6px;">
-                            ${fromRow}
-                            <b>${actionTargetLabel}</b> <span style="font-weight:700; color:var(--accent-cyan)">[${toAlias.initials}]</span> ${toAlias.name}
-                        </div>
-                    </div>
-                </div>`;
-            }
-            container.innerHTML = html || "<div style='text-align:center; padding: 20px;'>Empty Registry.</div>";
-        } catch (error) {
-            console.error(error);
-            container.innerHTML = "<div style='color: var(--alert-red); padding: 20px;'>Error fetching blockchain state.</div>";
-        }
+    } catch (err) {
+        showAuthError("Handshake Terminated: " + err.message);
     }
+}
 
-    // --- MODULE D: LOCKER ---
-    async function loadLocker() {
-        switchLayer('layer-locker');
-        const grid = document.getElementById('lockerGrid');
-        const total = await contract.getTotalItems();
-        let html = "";
-        for(let i=0; i<total; i++) {
-            const id = await contract.allItemIds(i);
-            const cust = await contract.currentCustodian(id);
-            if(cust.toLowerCase() === userAddress.toLowerCase()) {
-                const reg = await contract.evidenceRegistry(id);
-                
-                // True 3D Holographic SVG Cube
-                const svgCube = `<svg class="hologram-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="var(--accent-glow)" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>`;
-                
-                html += `<div class="grid-item" onclick="openLabPanel('${id}')">${svgCube}<div style="font-family:'Fira Code',monospace; font-size:14px; margin-bottom:4px; font-weight:700;">${id}</div><div style="font-size:11px; color:var(--accent-cyan); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">${reg.caseName}</div></div>`;
-            }
-        }
-        grid.innerHTML = html || "Empty Vault.";
-    }
-
-    // --- MODULE D-2: LAB TERMINAL ---
-    async function openLabPanel(id) {
-        switchLayer('layer-lab');
-        currentActiveItemForLab = id;
-        document.getElementById('labItemLabel').innerText = id;
-        const reg = await contract.evidenceRegistry(id);
-        document.getElementById('labAnalysis').value = reg.analysisReport;
-        document.getElementById('labEvaluation').value = reg.evaluationReport;
-        const isLab = (reg.lastAction.includes("Forensic") || reg.lastAction.includes("Analysis"));
+async function authenticateIdentity() {
+    try {
+        document.getElementById("connectBtn").innerText = "Verifying Cryptographic Signature...";
         
-        const alertBox = document.getElementById('labStatusAlert');
-        if (isLab) {
-            alertBox.innerHTML = "<span style='color:var(--success-green)'>[ CLEARANCE GRANTED ]</span> Write Access Enabled.";
-            alertBox.style.borderLeftColor = "var(--success-green)";
+        // Fetch RBAC & Identity from Contract
+        isUserAdmin = await contract.isAdmin(userAddress);
+        userRole = await contract.operativeRoles(userAddress);
+        const username = await contract.operativeUsernames(userAddress);
+        const badge = await contract.operativeBadges(userAddress);
+
+        if (userRole === 0 && !isUserAdmin) {
+            showAuthError("ACCESS DENIED: Origin Node lacks operative clearance.");
+            return;
+        }
+
+        // Build Local Directory from Events (Solves the Array Bricking Vulnerability)
+        await syncDirectory();
+
+        // Update UI Dashboard
+        document.getElementById("navUsername").innerText = username || "UNREGISTERED";
+        document.getElementById("navRole").innerText = isUserAdmin ? "System Admin" : `Role ID: ${userRole}`;
+        document.getElementById("badgeInitials").innerText = username ? username.substring(0, 2).toUpperCase() : "XX";
+        
+        // Populate Dossier
+        document.getElementById("profileUsername").innerText = username || "UNREGISTERED";
+        document.getElementById("profileRole").innerText = `Level ${userRole} ${isUserAdmin ? "(Admin)" : ""}`;
+        document.getElementById("profileBadge").innerText = badge > 0 ? badge : "N/A";
+        document.getElementById("profileAddress").innerText = userAddress;
+
+        // Show Admin C&C if authorized
+        if (isUserAdmin) {
+            document.getElementById("adminControlsGroup").style.display = "block";
+        }
+
+        // Route based on Registration Status
+        if (userRole > 0 && !username) {
+            document.getElementById("registrationOverlay").style.display = "flex";
         } else {
-            alertBox.innerHTML = "<span style='color:var(--alert-red)'>[ READ ONLY ]</span> You lack the WRITE forensic clearance.";
-            alertBox.style.borderLeftColor = "var(--alert-red)";
+            switchLayer('dashboard');
         }
 
-        document.getElementById('btnSubmitLab').style.display = isLab ? "block" : "none";
-        document.getElementById('labAnalysis').readOnly = !isLab;
-        document.getElementById('labEvaluation').readOnly = !isLab;
+        initSessionSecurity();
+
+    } catch (err) {
+        showAuthError("Authentication Failed: Network synchronization error.");
+        console.error(err);
+    }
+}
+
+function showAuthError(msg) {
+    const errBox = document.getElementById("authError");
+    errBox.innerText = msg;
+    errBox.style.display = "block";
+    document.getElementById("connectBtn").innerText = "Authenticate Identity";
+}
+
+function logout() {
+    userAddress = "";
+    userRole = 0;
+    isUserAdmin = false;
+    clearTimeout(sessionTimeout);
+    switchLayer('auth');
+    location.reload(); // Hard wipe memory state
+}
+
+// ==========================================================================
+// 2. EVENT-DRIVEN DIRECTORY (Replaces Unbounded Arrays)
+// ==========================================================================
+
+async function syncDirectory() {
+    operativeDirectory.clear();
+    reverseDirectory.clear();
+    
+    // Fetch all UsernameRegistered events from block 0 to latest
+    const filter = contract.filters.UsernameRegistered();
+    const events = await contract.queryFilter(filter);
+    
+    events.forEach(event => {
+        const address = event.args.operative;
+        const name = event.args.username;
+        operativeDirectory.set(name.toLowerCase(), address);
+        reverseDirectory.set(address.toLowerCase(), name);
+    });
+}
+
+// ==========================================================================
+// 3. IDENTITY REGISTRATION GATE
+// ==========================================================================
+
+async function registerIdentity() {
+    const input = document.getElementById("regUsername").value.trim();
+    if (input.length < 4 || input.length > 15) {
+        uiStatus("regStatus", "Error: Moniker must be 4-15 characters.", true);
+        return;
     }
 
-    document.getElementById('btnSubmitLab').addEventListener('click', async () => {
-        try {
-            const status = document.getElementById('statusLab');
-            status.className="status-box active"; status.style.display = "block"; status.innerText = "> Encoding Matrices...";
+    try {
+        uiStatus("regStatus", "Transmitting to EVM... Await Confirmation.", false);
+        const tx = await contract.registerUsername(input, getGasOverrides());
+        await tx.wait();
+        uiStatus("regStatus", "Identity Secured. Initializing Mainframe...", false);
+        
+        setTimeout(() => {
+            document.getElementById("registrationOverlay").style.display = "none";
+            authenticateIdentity(); // Resync UI
+        }, 2000);
+    } catch (err) {
+        uiStatus("regStatus", extractRevertReason(err), true);
+    }
+}
+
+// ==========================================================================
+// 4. MODULE A & B: INTAKE AND TRANSFER
+// ==========================================================================
+
+async function logEvidence() {
+    const caseName = document.getElementById("caseName").value;
+    const itemId = document.getElementById("itemId").value;
+    const blobId = document.getElementById("blobId").value;
+
+    if (!caseName || !itemId || !blobId) return uiStatus("statusIntake", "Missing parameters.", true);
+
+    try {
+        uiStatus("statusIntake", "Encoding Seizure Data...", false);
+        const tx = await contract.logInitialSeizure(caseName, itemId, blobId, getGasOverrides());
+        await tx.wait();
+        uiStatus("statusIntake", "Evidence Mathematically Secured.", false);
+    } catch (err) {
+        uiStatus("statusIntake", extractRevertReason(err), true);
+    }
+}
+
+async function transferCustody() {
+    const itemId = document.getElementById("transferItemId").value;
+    const action = document.getElementById("transferAction").value;
+    let target = document.getElementById("transferAddress").value.trim();
+
+    if (!itemId || !action || !target) return uiStatus("statusTransfer", "Missing parameters.", true);
+
+    // Resolve Username to 0x Address using local directory
+    if (!ethers.utils.isAddress(target)) {
+        const resolvedAddress = operativeDirectory.get(target.toLowerCase());
+        if (!resolvedAddress) {
+            return uiStatus("statusTransfer", "Error: Target Alias not found in system.", true);
+        }
+        target = resolvedAddress;
+    }
+
+    try {
+        uiStatus("statusTransfer", "Executing Transfer Protocol...", false);
+        const tx = await contract.transferCustody(itemId, target, action, getGasOverrides());
+        await tx.wait();
+        uiStatus("statusTransfer", "Transfer Executed & Logged.", false);
+        document.getElementById("transferAddress").value = "";
+        document.getElementById("ghostInput").value = "";
+    } catch (err) {
+        uiStatus("statusTransfer", extractRevertReason(err), true);
+    }
+}
+
+// ==========================================================================
+// 5. GHOST AUTOCOMPLETE LOGIC
+// ==========================================================================
+const transferInput = document.getElementById("transferAddress");
+const ghostInput = document.getElementById("ghostInput");
+const dropdown = document.getElementById("transferDropdown");
+
+transferInput.addEventListener("input", (e) => {
+    const val = e.target.value;
+    const lowerVal = val.toLowerCase();
+    
+    dropdown.style.display = "none";
+    dropdown.innerHTML = "";
+    ghostInput.value = "";
+
+    if (!val) return;
+
+    // 1. Check for raw Hex Paste overriding
+    if (val.length === 42 && val.startsWith("0x")) {
+        const matchedName = reverseDirectory.get(lowerVal);
+        if (matchedName) {
+            // Flash cyan to confirm match, then resolve text
+            transferInput.style.color = "var(--accent-cyan)";
+            setTimeout(() => { 
+                transferInput.value = matchedName; 
+                transferInput.style.color = "var(--text-main)";
+            }, 300);
+        }
+        return;
+    }
+
+    // 2. Match typing against usernames
+    const matches = Array.from(operativeDirectory.keys()).filter(name => name.startsWith(lowerVal));
+    
+    if (matches.length === 1) {
+        // Happy Path: Ghost Prediction
+        const originalCase = Array.from(operativeDirectory.keys()).find(k => k === matches[0]); // (Simplified logic assuming lowercase map)
+        
+        // Find the actual display name from reverse directory to preserve capitalization
+        const addr = operativeDirectory.get(matches[0]);
+        const displayName = reverseDirectory.get(addr.toLowerCase());
+
+        ghostInput.value = val + displayName.substring(val.length);
+    } else if (matches.length > 1) {
+        // Collision Resolver: Smart Dropdown
+        matches.forEach(match => {
+            const addr = operativeDirectory.get(match);
+            const displayName = reverseDirectory.get(addr.toLowerCase());
             
-            const tx = await contract.submitLabReport(currentActiveItemForLab, document.getElementById('labAnalysis').value, document.getElementById('labEvaluation').value, secureGasOptions);
-            await tx.wait(); alert("Reports Encoded Globally."); status.style.display="none"; switchLayer('layer-locker');
-        } catch(e) { const status = document.getElementById('statusLab'); status.className="status-box error"; status.innerText = e.message; }
+            const div = document.createElement("div");
+            div.className = "dropdown-item";
+            div.innerText = displayName;
+            div.onclick = () => {
+                transferInput.value = displayName;
+                dropdown.style.display = "none";
+                ghostInput.value = "";
+            };
+            dropdown.appendChild(div);
+        });
+        dropdown.style.display = "block";
+    }
+});
+
+transferInput.addEventListener("keydown", (e) => {
+    if ((e.key === "Tab" || e.key === "ArrowRight" || e.key === "Enter") && ghostInput.value) {
+        e.preventDefault();
+        transferInput.value = ghostInput.value;
+        ghostInput.value = "";
+    }
+});
+
+// ==========================================================================
+// 6. ADMIN C&C & SYSTEM SETTINGS
+// ==========================================================================
+
+function switchAdminTab(tab) {
+    document.querySelectorAll('.admin-tab, .admin-tab-content').forEach(el => el.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById(`tab-${tab}`).classList.add('active');
+}
+
+async function executeAdminAuth() {
+    const target = document.getElementById("authAddress").value;
+    const role = document.getElementById("authRole").value;
+    
+    if (!target || !role) return uiStatus("statusAdminAuth", "Missing inputs.", true);
+    
+    try {
+        uiStatus("statusAdminAuth", "Authorizing Cryptographic Clearance...", false);
+        const tx = await contract.authorizeNewOperative(target, role, getGasOverrides());
+        await tx.wait();
+        uiStatus("statusAdminAuth", "Operative Authorized. Badge Generated.", false);
+    } catch (err) {
+        uiStatus("statusAdminAuth", extractRevertReason(err), true);
+    }
+}
+
+function getGasOverrides() {
+    const priority = document.getElementById("gasPriority").value || 30;
+    const max = document.getElementById("gasMax").value || 40;
+    return {
+        maxPriorityFeePerGas: ethers.utils.parseUnits(priority.toString(), "gwei"),
+        maxFeePerGas: ethers.utils.parseUnits(max.toString(), "gwei")
+    };
+}
+
+// Session Security: Track Mouse Movement
+document.getElementById("autoLockTimer").addEventListener("change", (e) => {
+    autoLockMinutes = parseInt(e.target.value);
+    resetSessionTimer();
+});
+
+function resetSessionTimer() {
+    clearTimeout(sessionTimeout);
+    if (autoLockMinutes > 0 && userAddress) {
+        sessionTimeout = setTimeout(() => {
+            alert("Session Auto-Terminated due to terminal inactivity.");
+            logout();
+        }, autoLockMinutes * 60 * 1000);
+    }
+}
+document.onmousemove = resetSessionTimer;
+document.onkeypress = resetSessionTimer;
+function initSessionSecurity() { resetSessionTimer(); }
+
+// ==========================================================================
+// 7. UI ROUTING & OPTICS
+// ==========================================================================
+
+function switchLayer(layerId) {
+    document.querySelectorAll('.layer').forEach(el => {
+        el.classList.remove('active');
+        el.style.display = 'none';
     });
+    
+    // Deactivate all sidebar buttons
+    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+    
+    const targetLayer = document.getElementById(`layer-${layerId}`);
+    targetLayer.style.display = 'block';
+    // Small timeout to allow CSS block rendering before adding active class for animation
+    setTimeout(() => targetLayer.classList.add('active'), 10);
+}
+
+function toggleTheme() {
+    const body = document.body;
+    body.classList.toggle("theme-dark");
+    
+    const isDark = body.classList.contains("theme-dark");
+    document.getElementById("opticsToggle").checked = isDark;
+    
+    // Update SVG Path for Sun/Moon
+    const iconPath = document.querySelector("#themeIcon path");
+    if(isDark) {
+        iconPath.setAttribute("d", "M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"); // Moon
+    } else {
+        iconPath.setAttribute("d", "M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"); // Sun
+    }
+}
+
+function uiStatus(elementId, msg, isError) {
+    const box = document.getElementById(elementId);
+    box.innerText = msg;
+    box.style.display = "block";
+    box.style.color = isError ? "var(--alert-red)" : "var(--accent-cyan)";
+    box.style.borderLeftColor = isError ? "var(--alert-red)" : "var(--accent-cyan)";
+    box.style.backgroundColor = isError ? "rgba(220, 38, 38, 0.1)" : "rgba(0, 240, 255, 0.1)";
+    if(!isError) box.classList.add("active");
+    else box.classList.remove("active");
+    
+    if(!isError && !msg.includes("Await")) {
+        setTimeout(() => { box.style.display = "none"; }, 5000);
+    }
+}
+
+function extractRevertReason(err) {
+    if (err.data && err.data.message) return err.data.message;
+    if (err.message) return err.message.split(' (')[0]; 
+    return "Transaction Failed. Check permissions.";
+}
