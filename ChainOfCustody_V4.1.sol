@@ -1,181 +1,189 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-contract ChainOfCustodyV4_2 {
+contract ForensicsLedgerV4_4_1 {
     
-    address public admin;
-
-    // --- V4.2 RBAC: ROLE DEFINITIONS ---
-    // 0 = Unassigned / Revoked
-    // 1 = First Responding Investigator
-    // 2 = Evidence Clerk
-    // 3 = Forensic Lab Tech
-    // 4 = Court Liaison
+    // --- ACCESS CONTROL & RBAC ---
+    mapping(address => bool) public isAdmin;
+    uint256 public adminCount; // FIX: Tracks total active admins
+    
     mapping(address => uint8) public operativeRoles;
     
-    // The "Live Roster" for the Frontend Alias Generator
-    address[] public registeredOperatives;
-    mapping(address => bool) public isRegistered;
+    // --- IDENTITY & CREDENTIALS ---
+    mapping(address => string) public operativeUsernames;
+    mapping(string => bool) public isUsernameTaken;
+    mapping(address => uint256) public operativeBadges;
+    mapping(uint8 => uint256) private roleCounters;
 
-    // --- EVENTS ---
-    event OperativeAuthorized(address indexed operative, uint8 role);
-    event EvidenceLogged(string indexed itemId, string caseName, address indexed custodian, uint256 timestamp);
-    event CustodyTransferred(string indexed itemId, address indexed from, address indexed to, string action, uint256 timestamp);
-    event LabReportUpdated(string indexed itemId, address indexed tech, uint256 timestamp);
-
-    constructor() {
-        admin = msg.sender;
-        // Make the Admin a Lead Investigator by default so they can log initial evidence
-        _addOperative(msg.sender, 1); 
-    }
-
-    modifier onlyAdmin() {
-        require(msg.sender == admin, "ACCESS DENIED: Admin clearance required.");
-        _;
-    }
-
-    modifier onlyAuthorized() {
-        require(operativeRoles[msg.sender] > 0, "ACCESS DENIED: Wallet not recognized in operative registry.");
-        _;
-    }
-
-    // Limits standard identifiers (IDs, Hashes) to 150 bytes
-    modifier validString(string memory _str) {
-        require(bytes(_str).length > 0, "ERROR: Input cannot be empty.");
-        require(bytes(_str).length <= 150, "ERROR: Input exceeds limits.");
-        _;
-    }
-
-    // --- THE DOS PATCH: Limits heavy text inputs to 2500 bytes ---
-    modifier validReport(string memory _str) {
-        require(bytes(_str).length > 0, "ERROR: Report cannot be empty.");
-        require(bytes(_str).length <= 2500, "ERROR: Report exceeds 2500 byte limit. Keep logs concise.");
-        _;
-    }
-
-    // --- V4.2: THE LIVE ROSTER ENGINE ---
-    function authorizeOperative(address _operative, uint8 _roleId) public onlyAdmin {
-        require(_operative != address(0), "SECURITY BLOCK: Cannot authorize the zero address.");
-        require(_roleId >= 1 && _roleId <= 4, "ERROR: Invalid Role ID.");
-        
-        _addOperative(_operative, _roleId);
-        emit OperativeAuthorized(_operative, _roleId);
-    }
-
-    function _addOperative(address _operative, uint8 _roleId) private {
-        operativeRoles[_operative] = _roleId;
-        if (!isRegistered[_operative]) {
-            registeredOperatives.push(_operative);
-            isRegistered[_operative] = true;
-        }
-    }
-
-    // Frontend helper to easily fetch the whole roster for the Alias Dropdowns
-    function getAllOperatives() public view returns (address[] memory) {
-        return registeredOperatives;
-    }
-
-    // --- DATA STRUCTURES ---
+    // --- EVIDENCE STRUCTURES ---
     struct Evidence {
         string caseName;
         string itemId;
         string walrusBlobId;
         string analysisReport;
         string evaluationReport;
-        string lastAction; 
+        string lastAction;
     }
 
-    mapping(string => Evidence) public evidenceRegistry; 
-    mapping(string => address) public currentCustodian;
-    mapping(string => bool) public itemExists;
-    string[] public allItemIds;
-
-    struct EvidenceLog {
+    struct Log {
         string itemId;
         address from;
         address to;
         string action;
         uint256 timestamp;
     }
-    EvidenceLog[] public evidenceHistory;
 
-    // --- MODULE A: INTAKE ---
-    function logInitialSeizure(string memory _caseName, string memory _itemId, string memory _walrusBlobId) 
-        public 
-        onlyAuthorized 
-        validString(_caseName) 
-        validString(_itemId) 
-        validString(_walrusBlobId) 
-    {
-        require(!itemExists[_itemId], "Item ID already exists.");
+    mapping(string => Evidence) public evidenceRegistry;
+    mapping(string => address) public currentCustodian;
+    mapping(uint256 => Log) public evidenceHistory;
+    mapping(string => bool) public itemExists;
+    
+    uint256 public totalItems;
+    uint256 public totalLogs;
+
+    // --- EVENTS ---
+    event AdminAdded(address indexed newAdmin, address indexed addedBy);
+    event AdminRemoved(address indexed removedAdmin, address indexed removedBy);
+    event OperativeAuthorized(address indexed operative, uint8 role, uint256 badgeNumber);
+    event RoleReassigned(address indexed operative, uint8 oldRole, uint8 newRole, uint256 timestamp);
+    event UsernameRegistered(address indexed operative, string username);
+    event EvidenceLogged(string indexed itemId, string caseName, address indexed custodian, uint256 timestamp);
+    event CustodyTransferred(string indexed itemId, address from, address indexed to, string action, uint256 timestamp);
+    event LabReportUpdated(string indexed itemId, address indexed tech, uint256 timestamp);
+
+    // --- MODIFIERS ---
+    modifier onlyAdmin() {
+        require(isAdmin[msg.sender], "ACCESS DENIED: System Admin Clearance Required");
+        _;
+    }
+
+    modifier onlyRegistered() {
+        require(operativeRoles[msg.sender] > 0, "ACCESS DENIED: Unregistered Operative");
+        _;
+    }
+
+    // --- CONSTRUCTOR ---
+    constructor() {
+        // Grant God-Mode (Admin) to Deployer. Role ID remains 0 until manually authorized.
+        isAdmin[msg.sender] = true; 
+        adminCount = 1; // Initialize the admin life-raft
+    }
+
+    // --- 1. SYSTEM ADMIN CONTROLS ---
+    function addAdmin(address _newAdmin) public onlyAdmin {
+        require(!isAdmin[_newAdmin], "Address is already an Admin");
+        isAdmin[_newAdmin] = true;
+        adminCount++; // Increment total admins
+        emit AdminAdded(_newAdmin, msg.sender);
+    }
+
+    function removeAdmin(address _admin) public onlyAdmin {
+        require(msg.sender != _admin, "You cannot remove yourself");
+        require(isAdmin[_admin], "Address is not an Admin");
+        require(adminCount > 1, "CRITICAL: Cannot remove the last remaining system admin"); // FIX: Life-raft logic
         
+        isAdmin[_admin] = false;
+        adminCount--; // Decrement total admins
+        emit AdminRemoved(_admin, msg.sender);
+    }
+
+    function authorizeNewOperative(address _operative, uint8 _roleId) public onlyAdmin {
+        require(_roleId >= 1 && _roleId <= 4, "Invalid Clearance Level");
+        require(operativeRoles[_operative] == 0, "Operative already exists. Use reassignRole.");
+        
+        operativeRoles[_operative] = _roleId;
+        
+        // Counter strictly increases to ensure mathematically unique badges, regardless of transfers
+        roleCounters[_roleId]++;
+        operativeBadges[_operative] = (_roleId * 1000) + roleCounters[_roleId];
+
+        emit OperativeAuthorized(_operative, _roleId, operativeBadges[_operative]);
+    }
+
+    function reassignOperativeRole(address _operative, uint8 _newRoleId) public onlyAdmin {
+        require(_newRoleId >= 1 && _newRoleId <= 4, "Invalid Clearance Level");
+        uint8 oldRole = operativeRoles[_operative];
+        require(oldRole > 0, "Operative is not authorized yet");
+        require(oldRole != _newRoleId, "Operative already holds this role");
+
+        operativeRoles[_operative] = _newRoleId;
+        
+        emit RoleReassigned(_operative, oldRole, _newRoleId, block.timestamp);
+    }
+
+    // --- 2. IDENTITY REGISTRATION ---
+    function registerUsername(string memory _username) public onlyRegistered {
+        require(bytes(operativeUsernames[msg.sender]).length == 0, "Username already registered");
+        require(!isUsernameTaken[_username], "Username is already claimed");
+        require(bytes(_username).length >= 4 && bytes(_username).length <= 15, "Username must be 4-15 characters");
+
+        isUsernameTaken[_username] = true;
+        operativeUsernames[msg.sender] = _username;
+
+        emit UsernameRegistered(msg.sender, _username);
+    }
+
+    // --- 3. MODULE A: INTAKE ---
+    function logInitialSeizure(string memory _caseName, string memory _itemId, string memory _walrusBlobId) public onlyRegistered {
+        require(operativeRoles[msg.sender] == 1 || isAdmin[msg.sender], "Clearance Level 1 Required");
+        require(!itemExists[_itemId], "Evidence ID already exists");
+
+        evidenceRegistry[_itemId] = Evidence({
+            caseName: _caseName,
+            itemId: _itemId,
+            walrusBlobId: _walrusBlobId,
+            analysisReport: "",
+            evaluationReport: "",
+            lastAction: "Initial Seizure"
+        });
+
         itemExists[_itemId] = true;
         currentCustodian[_itemId] = msg.sender;
-        allItemIds.push(_itemId);
         
-        evidenceRegistry[_itemId] = Evidence(_caseName, _itemId, _walrusBlobId, "Pending Lab Analysis...", "Pending Evaluation...", "Initial Seizure");
-        evidenceHistory.push(EvidenceLog(_itemId, address(0), msg.sender, "Initial Seizure", block.timestamp));
-        
+        totalItems++;
+
+        evidenceHistory[totalLogs] = Log({
+            itemId: _itemId,
+            from: address(0),
+            to: msg.sender,
+            action: "Initial Seizure",
+            timestamp: block.timestamp
+        });
+        totalLogs++;
+
         emit EvidenceLogged(_itemId, _caseName, msg.sender, block.timestamp);
     }
 
-    // --- MODULE B: TRANSFER (WITH STRICT RBAC) ---
-    function transferCustody(string memory _itemId, address _newCustodian, string memory _action) 
-        public 
-        onlyAuthorized 
-        validString(_itemId)
-        validString(_action)
-    {
-        require(itemExists[_itemId], "Item does not exist.");
-        require(currentCustodian[_itemId] == msg.sender, "You do not hold this evidence.");
-        require(_newCustodian != address(0), "SECURITY BLOCK: Cannot transfer evidence to the zero address.");
-        require(operativeRoles[_newCustodian] > 0, "Receiver is not an authorized operative.");
+    // --- 4. MODULE B: CUSTODY TRANSFER ---
+    function transferCustody(string memory _itemId, address _newCustodian, string memory _action) public onlyRegistered {
+        require(itemExists[_itemId], "Evidence ID does not exist");
+        require(currentCustodian[_itemId] == msg.sender, "You do not have active custody");
+        require(operativeRoles[_newCustodian] > 0, "Target address is not authorized");
 
-        // --- V4.2 ROLE ENFORCEMENT PROTOCOL ---
-        bytes32 actionHash = keccak256(abi.encodePacked(_action));
-        uint8 targetRole = operativeRoles[_newCustodian];
-
-        if (actionHash == keccak256(abi.encodePacked("Transferred to Secure Storage"))) {
-            require(targetRole == 2, "SECURITY BLOCK: Receiver must be an Evidence Clerk (Role 2).");
-        } 
-        else if (actionHash == keccak256(abi.encodePacked("Checked out for Forensic Imaging")) || actionHash == keccak256(abi.encodePacked("Checked out for Data Analysis"))) {
-            require(targetRole == 3, "SECURITY BLOCK: Receiver must be a Forensic Lab Tech (Role 3).");
-        } 
-        else if (actionHash == keccak256(abi.encodePacked("Transferred for Legal Review"))) {
-            require(targetRole == 4, "SECURITY BLOCK: Receiver must be a Court Liaison (Role 4).");
-        }
-
-        address previousCustodian = msg.sender;
+        evidenceRegistry[_itemId].lastAction = _action;
         currentCustodian[_itemId] = _newCustodian;
-        evidenceRegistry[_itemId].lastAction = _action; 
 
-        evidenceHistory.push(EvidenceLog(_itemId, previousCustodian, _newCustodian, _action, block.timestamp));
-        emit CustodyTransferred(_itemId, previousCustodian, _newCustodian, _action, block.timestamp);
+        evidenceHistory[totalLogs] = Log({
+            itemId: _itemId,
+            from: msg.sender,
+            to: _newCustodian,
+            action: _action,
+            timestamp: block.timestamp
+        });
+        totalLogs++;
+
+        emit CustodyTransferred(_itemId, msg.sender, _newCustodian, _action, block.timestamp);
     }
 
-    // --- MODULE D: LAB REPORTS (PATCHED) ---
-    function submitLabReport(string memory _itemId, string memory _analysis, string memory _evaluation) 
-        public 
-        onlyAuthorized 
-        validString(_itemId)
-        validReport(_analysis)       // <-- THE DOS PATCH IS APPLIED HERE
-        validReport(_evaluation)     // <-- THE DOS PATCH IS APPLIED HERE
-    {
-        require(currentCustodian[_itemId] == msg.sender, "Only the current custodian can write reports.");
-        require(operativeRoles[msg.sender] == 3, "SECURITY BLOCK: Only Forensic Lab Techs (Role 3) can encode matrices.");
-        
-        string memory currentAction = evidenceRegistry[_itemId].lastAction;
-        bool isLabCheckOut = (keccak256(abi.encodePacked(currentAction)) == keccak256(abi.encodePacked("Checked out for Forensic Imaging"))) || 
-                             (keccak256(abi.encodePacked(currentAction)) == keccak256(abi.encodePacked("Checked out for Data Analysis")));
-        
-        require(isLabCheckOut, "SECURITY BLOCK: Asset is not checked out for Lab Analysis.");
+    // --- 5. MODULE D: LAB TERMINAL ---
+    function submitLabReport(string memory _itemId, string memory _analysis, string memory _evaluation) public onlyRegistered {
+        require(itemExists[_itemId], "Evidence ID does not exist");
+        require(currentCustodian[_itemId] == msg.sender, "Active custody required to encode reports");
+        require(operativeRoles[msg.sender] == 3 || isAdmin[msg.sender], "Clearance Level 3 Required");
 
         evidenceRegistry[_itemId].analysisReport = _analysis;
         evidenceRegistry[_itemId].evaluationReport = _evaluation;
-        
+
         emit LabReportUpdated(_itemId, msg.sender, block.timestamp);
     }
-
-    function getTotalLogs() public view returns (uint256) { return evidenceHistory.length; }
-    function getTotalItems() public view returns (uint256) { return allItemIds.length; }
 }
