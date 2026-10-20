@@ -10,11 +10,11 @@
 </head>
 <body class="theme-dark">
 
-    <!-- THEME TOGGLE -->
-    <button id="themeToggle" class="theme-toggle" onclick="toggleTheme()">
-        <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <!-- Default Moon SVG -->
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+    <!-- GLOBAL QUICK ACCESS: SETTINGS GEAR -->
+    <button class="settings-gear-btn" onclick="switchLayer('settings')" title="System Configurations">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
         </svg>
     </button>
 
@@ -23,7 +23,7 @@
         <div class="modal-content border-cyan">
             <h3 class="cyan-glow">REGISTER IDENTITY</h3>
             <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">
-                Your cryptographic clearance has been authorized. Register a permanent system moniker (4-15 characters, alphanumeric) to access the ledger.
+                Cryptographic clearance authorized. Register a permanent system moniker (4-15 characters, alphanumeric) to access the ledger.
             </p>
             <div class="input-group">
                 <input type="text" id="regUsername" placeholder="Enter Professional Identifier" autocomplete="off">
@@ -47,15 +47,21 @@
                 <div class="badge-shield" id="badgeInitials">--</div>
                 <div class="badge-info">
                     <span id="navUsername">Unauthenticated</span>
-                    <small id="navRole">Connect Wallet to sync</small>
+                    <small id="navRole">Connect Node to sync</small>
                 </div>
             </div>
 
             <nav class="nav-menu">
                 <button class="nav-btn active" onclick="switchLayer('dashboard')">Operations Terminal</button>
                 <button class="nav-btn" onclick="switchLayer('profile')">Operative Dossier</button>
-                <button class="nav-btn" onclick="switchLayer('settings')">System Configurations</button>
+                <button class="nav-btn" onclick="switchLayer('history')">Global History</button>
+                <button class="nav-btn" onclick="switchLayer('locker')">Evidence Locker</button>
+                <button class="nav-btn" onclick="switchLayer('help')">System Guide</button>
             </nav>
+            
+            <div class="sidebar-footer">
+                <button class="btn-logout" onclick="logout()">[ TERMINATE SESSION ]</button>
+            </div>
         </aside>
 
         <!-- MAIN CONTENT AREA -->
@@ -82,16 +88,24 @@
                             <input type="text" id="blobId" placeholder="Walrus Blob Hash">
                         </div>
                         <button class="btn-secondary" onclick="logEvidence()">INITIALIZE CHAIN</button>
+                        <div id="statusIntake" class="status-box"></div>
                     </div>
 
-                    <!-- MODULE B: CUSTODY TRANSFER (WITH GHOST AUTOCOMPLETE) -->
+                    <!-- MODULE B: CUSTODY TRANSFER -->
                     <div class="panel">
                         <h3>2. Chain of Custody Transfer</h3>
                         <div class="input-group">
                             <input type="text" id="transferItemId" placeholder="Target Item ID">
                         </div>
                         <div class="input-group">
-                            <input type="text" id="transferAction" placeholder="Action (e.g., Transfer to Storage)">
+                            <select id="transferAction">
+                                <option value="" disabled selected>Select Authorized Action...</option>
+                                <option value="Transferred to Secure Storage">Transferred to Secure Storage (Clerk)</option>
+                                <option value="Checked out for Forensic Imaging">Checked out for Forensic Imaging (Lab)</option>
+                                <option value="Checked out for Data Analysis">Checked out for Data Analysis (Lab)</option>
+                                <option value="Transferred for Legal Review">Transferred for Legal Review (Court)</option>
+                                <option value="Case Closed / Returned to Owner">Case Closed / Returned to Owner (Admin)</option>
+                            </select>
                         </div>
                         
                         <!-- Ghost Autocomplete Container -->
@@ -102,6 +116,7 @@
                         </div>
 
                         <button class="btn-secondary" onclick="transferCustody()">EXECUTE TRANSFER</button>
+                        <div id="statusTransfer" class="status-box"></div>
                     </div>
                 </div>
             </div>
@@ -128,16 +143,48 @@
                         <h2 id="profileAddress" class="hex-text">--</h2>
                     </div>
                 </div>
+
+                <h4 style="margin-top: 32px; margin-bottom: 15px; color: var(--text-muted);">System Integrity Matrix</h4>
+                <div class="integrity-matrix">
+                    <div class="matrix-row">
+                        <span class="matrix-label">Cryptographic Signature:</span>
+                        <span class="matrix-value" style="color: var(--success-green);">VERIFIED [ VALID ]</span>
+                    </div>
+                    <div class="matrix-row">
+                        <span class="matrix-label">Live Network Sync:</span>
+                        <span class="matrix-value">OPTIMAL</span>
+                    </div>
+                    <div class="matrix-row">
+                        <span class="matrix-label">Smart Contract Comm:</span>
+                        <span class="matrix-value" style="color: var(--accent-cyan);">Polygon Amoy (v4.6)</span>
+                    </div>
+                </div>
             </div>
 
             <!-- LAYER 3: SYSTEM CONFIGURATIONS -->
             <div id="layer-settings" class="layer" style="display: none;">
                 <h1>System Configurations</h1>
 
-                <!-- GLOBAL GAS SETTINGS (For All Operatives) -->
+                <!-- 1. Interface & Optics -->
                 <div class="settings-group">
-                    <h4>Network Routing & Gas Parameters</h4>
-                    <p class="settings-desc">Override Polygon RPC base fees to prioritize transaction mining during network congestion.</p>
+                    <h4>1. Interface & Optics</h4>
+                    <div class="toggle-row">
+                        <span class="toggle-label">Dark Optics Mode</span>
+                        <label class="switch"><input type="checkbox" id="opticsToggle" onchange="toggleTheme()"><span class="slider"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <span class="toggle-label">Anonymize Alias Output</span>
+                        <label class="switch"><input type="checkbox" id="anonToggle"><span class="slider"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <span class="toggle-label">Render 3D Holographics</span>
+                        <label class="switch"><input type="checkbox" id="holoToggle" checked><span class="slider"></span></label>
+                    </div>
+                </div>
+
+                <!-- 2. Network Routing & Gas -->
+                <div class="settings-group">
+                    <h4>2. Network Routing & Gas Parameters</h4>
                     <div class="grid-layout" style="grid-template-columns: 1fr 1fr;">
                         <div class="input-group">
                             <label>Max Priority Fee (Gwei)</label>
@@ -150,13 +197,27 @@
                     </div>
                 </div>
 
-                <!-- ADMIN COMMAND & CONTROL (Hidden by Default) -->
+                <!-- 3. Session Security -->
+                <div class="settings-group">
+                    <h4>3. Session Security</h4>
+                    <div class="input-group">
+                        <label>Auto-Terminate Idle Session (Tracks Mouse Movement)</label>
+                        <select id="autoLockTimer" style="cursor: pointer;">
+                            <option value="0">Disabled (Manual Logout Only)</option>
+                            <option value="5">Lock after 5 Minutes</option>
+                            <option value="15">Lock after 15 Minutes</option>
+                            <option value="30">Lock after 30 Minutes</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 4. ADMIN COMMAND & CONTROL -->
                 <div class="settings-group border-cyan" id="adminControlsGroup" style="display: none; box-shadow: 0 0 15px rgba(0, 240, 255, 0.05);">
-                    <h4 class="cyan-text" style="margin-top: 0;">Command & Control Terminal</h4>
+                    <h4 class="cyan-text" style="margin-top: 0;">4. Command & Control Terminal</h4>
                     
                     <div class="admin-tabs">
                         <button class="admin-tab active" onclick="switchAdminTab('auth')">Authorize Operative</button>
-                        <button class="admin-tab" onclick="switchAdminTab('admin')">Designate System Admin</button>
+                        <button class="admin-tab" onclick="switchAdminTab('admin')">Designate Admin</button>
                     </div>
 
                     <!-- Tab 1: Authorize Operative -->
@@ -182,6 +243,74 @@
                 </div>
 
             </div>
+
+            <!-- LAYER 4: IMMUTABLE HISTORY -->
+            <div id="layer-history" class="layer" style="display: none;">
+                <h1>Global Immutable History</h1>
+                <div id="historyContainer" class="history-scroll-box">
+                    <!-- History cards injected via JS -->
+                </div>
+            </div>
+
+            <!-- LAYER 5: EVIDENCE LOCKER -->
+            <div id="layer-locker" class="layer" style="display: none;">
+                <h1>My Evidence Locker</h1>
+                <div id="lockerGrid" class="grid-container">
+                    <!-- Locker cards injected via JS -->
+                </div>
+            </div>
+
+            <!-- LAYER 6: FORENSICS TERMINAL (LAB) -->
+            <div id="layer-lab" class="layer" style="display: none;">
+                <button class="btn-secondary" onclick="switchLayer('locker')" style="width: auto; margin-bottom: 20px;">← Back to Locker</button>
+                <h1>Forensics Terminal</h1>
+                <p class="mono" style="color: var(--accent-cyan); font-weight: 600; margin-bottom: 20px;">Target Asset: <span id="labItemLabel" style="color: var(--text-main);">--</span></p>
+                
+                <div id="labStatusAlert" class="status-box" style="display: block; margin-bottom: 20px;"></div>
+                
+                <div class="input-group">
+                    <textarea id="labAnalysis" placeholder="ENCODE ANALYSIS LOG..." style="height: 120px;"></textarea>
+                </div>
+                <div class="input-group">
+                    <textarea id="labEvaluation" placeholder="ENCODE EVALUATION LOG..." style="height: 120px;"></textarea>
+                </div>
+                <button id="btnSubmitLab" class="btn-primary" style="background:var(--lab-purple); color:#ffffff;">ENCODE MATRICES</button>
+                <div id="statusLab" class="status-box"></div>
+            </div>
+
+            <!-- LAYER 7: SYSTEM GUIDE -->
+            <div id="layer-help" class="layer" style="display: none;">
+                <h1>System Protocol Guide</h1>
+                <p style="margin-bottom: 20px; color: var(--text-muted);">Standard Operating Procedures for the CYB-305 Immutable Ledger.</p>
+
+                <div class="panel" style="margin-bottom: 15px;">
+                    <h4 style="margin: 0 0 10px 0; color: var(--accent-cyan);">1. Identity & Access Control (RBAC)</h4>
+                    <p style="margin: 0; color: var(--text-muted); line-height: 1.5;">
+                        Access to evidence is strictly governed by the smart contract based on your assigned clearance:
+                    </p>
+                    <ul style="margin-top: 10px; padding-left: 20px; color: var(--text-main); font-size: 13px; line-height: 1.6;">
+                        <li><b>Role 1 (Investigator):</b> Authorized to seize and log initial evidence.</li>
+                        <li><b>Role 2 (Clerk):</b> Authorized to receive and vault physical assets.</li>
+                        <li><b>Role 3 (Lab Tech):</b> Authorized to check out assets and encode forensic matrices.</li>
+                        <li><b>Role 4 (Liaison):</b> Authorized to extract assets for legal/court review.</li>
+                    </ul>
+                </div>
+
+                <div class="panel" style="margin-bottom: 15px;">
+                    <h4 style="margin: 0 0 10px 0; color: var(--accent-cyan);">2. Module A: Initial Intake</h4>
+                    <p style="margin: 0; color: var(--text-muted); line-height: 1.5;">
+                        Used strictly when discovering new evidence in the field. Uploading a file generates a decentralized Walrus Blob ID. The blockchain only stores this hash, ensuring zero-knowledge privacy while guaranteeing the file is never tampered with.
+                    </p>
+                </div>
+
+                <div class="panel" style="margin-bottom: 15px;">
+                    <h4 style="margin: 0 0 10px 0; color: var(--accent-cyan);">3. Module B: Custody Transfer</h4>
+                    <p style="margin: 0; color: var(--text-muted); line-height: 1.5;">
+                        The smart contract mathematically rejects any transfer to an operative who lacks the required clearance for the selected action. Utilize the dynamic terminal autocomplete to locate registered operatives.
+                    </p>
+                </div>
+            </div>
+
         </main>
     </div>
     
