@@ -18,7 +18,15 @@
         </svg>
     </button>
 
-    <!-- IDENTITY REGISTRATION GATE (Overlay for new users) -->
+    <!-- CLEAN CLASS-BASED THEME TOGGLE -->
+    <button id="themeToggle" class="theme-toggle" onclick="toggleTheme()" title="Toggle Optics">
+        <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <!-- Defaults to Moon, changes via JS -->
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+    </button>
+
+    <!-- IDENTITY REGISTRATION GATE -->
     <div id="registrationOverlay" class="modal-overlay" style="display: none;">
         <div class="modal-content border-cyan">
             <h3 class="cyan-glow">REGISTER IDENTITY</h3>
@@ -33,16 +41,15 @@
         </div>
     </div>
 
-    <!-- MAIN DASHBOARD -->
+    <!-- MAIN DASHBOARD BLUEPRINT (Sidebar + Content) -->
     <div class="dashboard-container">
         
-        <!-- SIDEBAR NAVIGATION -->
+        <!-- PERSISTENT SIDEBAR NAVIGATION -->
         <aside class="sidebar">
             <div class="brand-header">
                 <h2>CUSTODY<span class="cyan-text">LEDGER</span></h2>
             </div>
 
-            <!-- ACTIVE OPERATIVE BADGE -->
             <div class="user-badge" onclick="switchLayer('profile')">
                 <div class="badge-shield" id="badgeInitials">--</div>
                 <div class="badge-info">
@@ -52,7 +59,7 @@
             </div>
 
             <nav class="nav-menu">
-                <button class="nav-btn active" onclick="switchLayer('dashboard')">Operations Terminal</button>
+                <button class="nav-btn active" onclick="switchLayer('dashboard')">Operations Hub</button>
                 <button class="nav-btn" onclick="switchLayer('profile')">Operative Dossier</button>
                 <button class="nav-btn" onclick="switchLayer('history')">Global History</button>
                 <button class="nav-btn" onclick="switchLayer('locker')">Evidence Locker</button>
@@ -64,65 +71,83 @@
             </div>
         </aside>
 
-        <!-- MAIN CONTENT AREA -->
-        <main class="content-area">
+        <!-- MAIN CONTENT WORKSPACE -->
+        <main class="content-area glass-panel">
             
-            <!-- LAYER 1: OPERATIONS DASHBOARD -->
+            <!-- LAYER 1: OPERATIONS HUB (Routing Dashboard) -->
             <div id="layer-dashboard" class="layer active">
                 <div class="header-flex">
                     <h1>Operations Terminal</h1>
-                    <button class="btn-primary" id="connectBtn" onclick="initWeb3()">CONNECT ORIGIN NODE</button>
+                    <button class="btn-primary" id="connectBtn" onclick="initWeb3()" style="width: auto; padding: 12px 24px;">CONNECT ORIGIN NODE</button>
                 </div>
 
-                <div class="grid-layout">
-                    <!-- MODULE A: LOG EVIDENCE -->
-                    <div class="panel">
-                        <h3>1. Intake & Initialization</h3>
-                        <div class="input-group">
-                            <input type="text" id="caseName" placeholder="Case Designation (e.g., OP-VANGUARD)">
-                        </div>
-                        <div class="input-group">
-                            <input type="text" id="itemId" placeholder="Item ID (e.g., EV-994)">
-                        </div>
-                        <div class="input-group">
-                            <input type="text" id="blobId" placeholder="Walrus Blob Hash">
-                        </div>
-                        <button class="btn-secondary" onclick="logEvidence()">INITIALIZE CHAIN</button>
-                        <div id="statusIntake" class="status-box"></div>
-                    </div>
+                <p style="margin-bottom: 30px; font-weight: 500; color: var(--text-muted);">Select an authorized module to proceed.</p>
 
-                    <!-- MODULE B: CUSTODY TRANSFER -->
-                    <div class="panel">
-                        <h3>2. Chain of Custody Transfer</h3>
-                        <div class="input-group">
-                            <input type="text" id="transferItemId" placeholder="Target Item ID">
-                        </div>
-                        <div class="input-group">
-                            <select id="transferAction">
-                                <option value="" disabled selected>Select Authorized Action...</option>
-                                <option value="Transferred to Secure Storage">Transferred to Secure Storage (Clerk)</option>
-                                <option value="Checked out for Forensic Imaging">Checked out for Forensic Imaging (Lab)</option>
-                                <option value="Checked out for Data Analysis">Checked out for Data Analysis (Lab)</option>
-                                <option value="Transferred for Legal Review">Transferred for Legal Review (Court)</option>
-                                <option value="Case Closed / Returned to Owner">Case Closed / Returned to Owner (Admin)</option>
-                            </select>
-                        </div>
-                        
-                        <!-- Ghost Autocomplete Container -->
-                        <div class="autocomplete-container">
-                            <input type="text" id="ghostInput" class="ghost-input" disabled>
-                            <input type="text" id="transferAddress" class="main-input" placeholder="Receiver: Username or 0x..." autocomplete="off">
-                            <div id="transferDropdown" class="dropdown-list" style="display: none;"></div>
-                        </div>
+                <!-- Restored Decoupled Routing Menu -->
+                <button class="btn-menu" onclick="switchLayer('intake')"><span>A. Log Initial Evidence (Role 1 Only)</span> <span class="cyan-text" style="font-weight: 800;">>></span></button>
+                <button class="btn-menu" onclick="switchLayer('transfer')"><span>B. Transfer Custody Signature (Universal)</span> <span class="cyan-text" style="font-weight: 800;">>></span></button>
+                <button class="btn-menu" onclick="switchLayer('history')"><span>C. Global Immutable History</span> <span class="cyan-text" style="font-weight: 800;">>></span></button>
+                <button class="btn-menu" onclick="switchLayer('locker')" style="border-left: 4px solid var(--success-green);"><span>D. My Evidence Locker</span> <span class="cyan-text" style="font-weight: 800;">>></span></button>
+                <button class="btn-menu" onclick="switchLayer('help')" style="border-left: 4px solid var(--lab-purple);"><span>E. System Guide</span> <span class="cyan-text" style="font-weight: 800;">>></span></button>
+            </div>
 
-                        <button class="btn-secondary" onclick="transferCustody()">EXECUTE TRANSFER</button>
-                        <div id="statusTransfer" class="status-box"></div>
+            <!-- LAYER: DECOUPLED INTAKE MODULE -->
+            <div id="layer-intake" class="layer" style="display: none;">
+                <button class="btn-back" onclick="switchLayer('dashboard')">← Return to Hub</button>
+                <h1>Initial Evidence Intake</h1>
+                <p style="color: var(--text-muted); margin-bottom: 25px;">Clearance Level 1 Required. Execute initial chain logging.</p>
+                
+                <div class="panel">
+                    <div class="input-group">
+                        <input type="text" id="caseName" placeholder="Case Designation (e.g., OP-VANGUARD)">
                     </div>
+                    <div class="input-group">
+                        <input type="text" id="itemId" placeholder="Item ID (e.g., EV-994)">
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="blobId" placeholder="Walrus Blob Hash">
+                    </div>
+                    <button class="btn-secondary" onclick="logEvidence()">INITIALIZE CHAIN</button>
+                    <div id="statusIntake" class="status-box"></div>
                 </div>
             </div>
 
-            <!-- LAYER 2: OPERATIVE DOSSIER -->
+            <!-- LAYER: DECOUPLED TRANSFER MODULE -->
+            <div id="layer-transfer" class="layer" style="display: none;">
+                <button class="btn-back" onclick="switchLayer('dashboard')">← Return to Hub</button>
+                <h1>Chain of Custody Transfer</h1>
+                <p style="color: var(--text-muted); margin-bottom: 25px;">Execute cryptographic transfer of active physical assets.</p>
+
+                <div class="panel">
+                    <div class="input-group">
+                        <input type="text" id="transferItemId" placeholder="Target Item ID">
+                    </div>
+                    <div class="input-group">
+                        <select id="transferAction">
+                            <option value="" disabled selected>Select Authorized Action...</option>
+                            <option value="Transferred to Secure Storage">Transferred to Secure Storage (Clerk)</option>
+                            <option value="Checked out for Forensic Imaging">Checked out for Forensic Imaging (Lab)</option>
+                            <option value="Checked out for Data Analysis">Checked out for Data Analysis (Lab)</option>
+                            <option value="Transferred for Legal Review">Transferred for Legal Review (Court)</option>
+                            <option value="Case Closed / Returned to Owner">Case Closed / Returned to Owner (Admin)</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Ghost Autocomplete Container -->
+                    <div class="autocomplete-container">
+                        <input type="text" id="ghostInput" class="ghost-input" disabled>
+                        <input type="text" id="transferAddress" class="main-input" placeholder="Receiver: Username or 0x..." autocomplete="off">
+                        <div id="transferDropdown" class="dropdown-list" style="display: none;"></div>
+                    </div>
+
+                    <button class="btn-primary" onclick="transferCustody()" style="background: linear-gradient(90deg, #f59e0b, #ea580c); box-shadow: 0 10px 20px -10px rgba(234, 88, 12, 0.4);">EXECUTE VERIFIED TRANSFER</button>
+                    <div id="statusTransfer" class="status-box"></div>
+                </div>
+            </div>
+
+            <!-- LAYER: OPERATIVE DOSSIER -->
             <div id="layer-profile" class="layer" style="display: none;">
+                <button class="btn-back" onclick="switchLayer('dashboard')">← Return to Hub</button>
                 <h1>Operative Dossier</h1>
                 
                 <div class="profile-grid">
@@ -156,22 +181,18 @@
                     </div>
                     <div class="matrix-row">
                         <span class="matrix-label">Smart Contract Comm:</span>
-                        <span class="matrix-value" style="color: var(--accent-cyan);">Polygon Amoy (v4.6)</span>
+                        <span class="matrix-value cyan-text">Polygon Amoy (v4.6)</span>
                     </div>
                 </div>
             </div>
 
-            <!-- LAYER 3: SYSTEM CONFIGURATIONS -->
+            <!-- LAYER: SYSTEM CONFIGURATIONS -->
             <div id="layer-settings" class="layer" style="display: none;">
+                <button class="btn-back" onclick="switchLayer('dashboard')">← Return to Hub</button>
                 <h1>System Configurations</h1>
 
-                <!-- 1. Interface & Optics -->
                 <div class="settings-group">
                     <h4>1. Interface & Optics</h4>
-                    <div class="toggle-row">
-                        <span class="toggle-label">Dark Optics Mode</span>
-                        <label class="switch"><input type="checkbox" id="opticsToggle" onchange="toggleTheme()"><span class="slider"></span></label>
-                    </div>
                     <div class="toggle-row">
                         <span class="toggle-label">Anonymize Alias Output</span>
                         <label class="switch"><input type="checkbox" id="anonToggle"><span class="slider"></span></label>
@@ -182,7 +203,6 @@
                     </div>
                 </div>
 
-                <!-- 2. Network Routing & Gas -->
                 <div class="settings-group">
                     <h4>2. Network Routing & Gas Parameters</h4>
                     <div class="grid-layout" style="grid-template-columns: 1fr 1fr;">
@@ -197,11 +217,10 @@
                     </div>
                 </div>
 
-                <!-- 3. Session Security -->
                 <div class="settings-group">
                     <h4>3. Session Security</h4>
                     <div class="input-group">
-                        <label>Auto-Terminate Idle Session (Tracks Mouse Movement)</label>
+                        <label>Auto-Terminate Idle Session</label>
                         <select id="autoLockTimer" style="cursor: pointer;">
                             <option value="0">Disabled (Manual Logout Only)</option>
                             <option value="5">Lock after 5 Minutes</option>
@@ -211,7 +230,6 @@
                     </div>
                 </div>
 
-                <!-- 4. ADMIN COMMAND & CONTROL -->
                 <div class="settings-group border-cyan" id="adminControlsGroup" style="display: none; box-shadow: 0 0 15px rgba(0, 240, 255, 0.05);">
                     <h4 class="cyan-text" style="margin-top: 0;">4. Command & Control Terminal</h4>
                     
@@ -220,7 +238,6 @@
                         <button class="admin-tab" onclick="switchAdminTab('admin')">Designate Admin</button>
                     </div>
 
-                    <!-- Tab 1: Authorize Operative -->
                     <div id="tab-auth" class="admin-tab-content active">
                         <div class="input-group">
                             <input type="text" id="authAddress" placeholder="Target Node: 0x...">
@@ -231,7 +248,6 @@
                         <button class="btn-primary glow-button" onclick="executeAdminAuth()">AUTHORIZE CLEARANCE</button>
                     </div>
 
-                    <!-- Tab 2: Designate Admin -->
                     <div id="tab-admin" class="admin-tab-content">
                         <div class="input-group">
                             <input type="text" id="newAdminAddress" placeholder="Target Node: 0x...">
@@ -241,30 +257,27 @@
                     
                     <div id="statusAdminAuth" class="status-box"></div>
                 </div>
-
             </div>
 
-            <!-- LAYER 4: IMMUTABLE HISTORY -->
+            <!-- LAYER: IMMUTABLE HISTORY -->
             <div id="layer-history" class="layer" style="display: none;">
+                <button class="btn-back" onclick="switchLayer('dashboard')">← Return to Hub</button>
                 <h1>Global Immutable History</h1>
-                <div id="historyContainer" class="history-scroll-box">
-                    <!-- History cards injected via JS -->
-                </div>
+                <div id="historyContainer" class="history-scroll-box"></div>
             </div>
 
-            <!-- LAYER 5: EVIDENCE LOCKER -->
+            <!-- LAYER: EVIDENCE LOCKER -->
             <div id="layer-locker" class="layer" style="display: none;">
+                <button class="btn-back" onclick="switchLayer('dashboard')">← Return to Hub</button>
                 <h1>My Evidence Locker</h1>
-                <div id="lockerGrid" class="grid-container">
-                    <!-- Locker cards injected via JS -->
-                </div>
+                <div id="lockerGrid" class="grid-container"></div>
             </div>
 
-            <!-- LAYER 6: FORENSICS TERMINAL (LAB) -->
+            <!-- LAYER: FORENSICS TERMINAL (LAB) -->
             <div id="layer-lab" class="layer" style="display: none;">
-                <button class="btn-secondary" onclick="switchLayer('locker')" style="width: auto; margin-bottom: 20px;">← Back to Locker</button>
+                <button class="btn-back" onclick="switchLayer('locker')">← Back to Locker</button>
                 <h1>Forensics Terminal</h1>
-                <p class="mono" style="color: var(--accent-cyan); font-weight: 600; margin-bottom: 20px;">Target Asset: <span id="labItemLabel" style="color: var(--text-main);">--</span></p>
+                <p class="mono cyan-text" style="font-weight: 600; margin-bottom: 20px;">Target Asset: <span id="labItemLabel" style="color: var(--text-main);">--</span></p>
                 
                 <div id="labStatusAlert" class="status-box" style="display: block; margin-bottom: 20px;"></div>
                 
@@ -278,36 +291,14 @@
                 <div id="statusLab" class="status-box"></div>
             </div>
 
-            <!-- LAYER 7: SYSTEM GUIDE -->
+            <!-- LAYER: SYSTEM GUIDE -->
             <div id="layer-help" class="layer" style="display: none;">
+                <button class="btn-back" onclick="switchLayer('dashboard')">← Return to Hub</button>
                 <h1>System Protocol Guide</h1>
                 <p style="margin-bottom: 20px; color: var(--text-muted);">Standard Operating Procedures for the CYB-305 Immutable Ledger.</p>
-
                 <div class="panel" style="margin-bottom: 15px;">
-                    <h4 style="margin: 0 0 10px 0; color: var(--accent-cyan);">1. Identity & Access Control (RBAC)</h4>
-                    <p style="margin: 0; color: var(--text-muted); line-height: 1.5;">
-                        Access to evidence is strictly governed by the smart contract based on your assigned clearance:
-                    </p>
-                    <ul style="margin-top: 10px; padding-left: 20px; color: var(--text-main); font-size: 13px; line-height: 1.6;">
-                        <li><b>Role 1 (Investigator):</b> Authorized to seize and log initial evidence.</li>
-                        <li><b>Role 2 (Clerk):</b> Authorized to receive and vault physical assets.</li>
-                        <li><b>Role 3 (Lab Tech):</b> Authorized to check out assets and encode forensic matrices.</li>
-                        <li><b>Role 4 (Liaison):</b> Authorized to extract assets for legal/court review.</li>
-                    </ul>
-                </div>
-
-                <div class="panel" style="margin-bottom: 15px;">
-                    <h4 style="margin: 0 0 10px 0; color: var(--accent-cyan);">2. Module A: Initial Intake</h4>
-                    <p style="margin: 0; color: var(--text-muted); line-height: 1.5;">
-                        Used strictly when discovering new evidence in the field. Uploading a file generates a decentralized Walrus Blob ID. The blockchain only stores this hash, ensuring zero-knowledge privacy while guaranteeing the file is never tampered with.
-                    </p>
-                </div>
-
-                <div class="panel" style="margin-bottom: 15px;">
-                    <h4 style="margin: 0 0 10px 0; color: var(--accent-cyan);">3. Module B: Custody Transfer</h4>
-                    <p style="margin: 0; color: var(--text-muted); line-height: 1.5;">
-                        The smart contract mathematically rejects any transfer to an operative who lacks the required clearance for the selected action. Utilize the dynamic terminal autocomplete to locate registered operatives.
-                    </p>
+                    <h4 class="cyan-text" style="margin: 0 0 10px 0;">1. Identity & Access Control (RBAC)</h4>
+                    <p style="margin: 0; color: var(--text-muted); line-height: 1.5;">Access to evidence is strictly governed by the smart contract based on your assigned clearance.</p>
                 </div>
             </div>
 
