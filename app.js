@@ -1,5 +1,6 @@
 // --- CONFIGURATION & ABI ---
 const CONTRACT_ADDRESS = "0xf8879c91342a9d4330974cb678f36db00ace1b92";
+const DEPLOYMENT_BLOCK = 50609920;
 const POLYGON_AMOY_CHAIN_ID = "0x13882"; 
 
 const ABI = [
@@ -151,7 +152,9 @@ async function syncDirectory() {
     reverseDirectory.clear();
     
     const filter = contract.filters.UsernameRegistered();
-    const events = await contract.queryFilter(filter);
+    
+    // Request events starting ONLY from the deployment block
+    const events = await contract.queryFilter(filter, DEPLOYMENT_BLOCK, "latest");
     
     events.forEach(event => {
         const address = event.args.operative;
