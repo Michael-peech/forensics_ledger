@@ -153,15 +153,31 @@ async function syncDirectory() {
     
     const filter = contract.filters.UsernameRegistered();
     
-    // Request events starting ONLY from the deployment block
-    const events = await contract.queryFilter(filter, DEPLOYMENT_BLOCK, "latest");
-    
-    events.forEach(event => {
-        const address = event.args.operative;
-        const name = event.args.username;
-        operativeDirectory.set(name.toLowerCase(), address);
-        reverseDirectory.set(address.toLowerCase(), name);
-    });
+    try {
+        const latestBlock = await provider.getBlockNumber();
+        const CHUNK_SIZE = 5000; // Safe limit for Amoy public RPCs
+        let fromBlock = DEPLOYMENT_BLOCK;
+
+        // Loop through the blockchain in 5,000-block chunks
+        while (fromBlock <= latestBlock) {
+            let toBlock = fromBlock + CHUNK_SIZE;
+            if (toBlock > latestBlock) toBlock = latestBlock;
+
+            const events = await contract.queryFilter(filter, fromBlock, toBlock);
+            
+            events.forEach(event => {
+                const address = event.args.operative;
+                const name = event.args.username;
+                operativeDirectory.set(name.toLowerCase(), address);
+                reverseDirectory.set(address.toLowerCase(), name);
+            });
+
+            fromBlock = toBlock + 1;
+        }
+    } catch (err) {
+        console.warn("Directory sync warning: RPC node throttled the request. Ghost autocomplete may be incomplete.", err);
+        // We do not throw the error here, ensuring the user can still log in even if the node is acting up.
+    }
 }
 
 // ==========================================================================
