@@ -1,5 +1,5 @@
 // --- CONFIGURATION & ABI ---
-const CONTRACT_ADDRESS = "0xYOUR_V4_6_CONTRACT_ADDRESS"; // Paste your deployed Polygon Amoy address here
+const CONTRACT_ADDRESS = "0xf8879c91342a9d4330974cb678f36db00ace1b92";
 const POLYGON_AMOY_CHAIN_ID = "0x13882"; 
 
 const ABI = [
