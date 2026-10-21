@@ -1,28 +1,20 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="theme-dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enterprise Forensics Ledger</title>
+    <title>Chain Of Custody Forensics Ledger</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Fira+Code:wght@400;500;800&family=Space+Mono&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
 </head>
-<body class="theme-dark">
+<body>
 
-    <!-- GLOBAL QUICK ACCESS: SETTINGS GEAR -->
-    <button class="settings-gear-btn" onclick="switchLayer('settings')" title="System Configurations">
+    <!-- GLOBAL SETTINGS GEAR (Hidden initially, revealed after Auth) -->
+    <button id="settingsGear" class="settings-gear-btn" onclick="switchLayer('settings')" title="System Configurations" style="display: none;">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-        </svg>
-    </button>
-
-    <!-- CLEAN CLASS-BASED THEME TOGGLE -->
-    <button id="themeToggle" class="theme-toggle" onclick="toggleTheme()" title="Toggle Optics">
-        <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <!-- Defaults to Moon, changes via JS -->
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
         </svg>
     </button>
 
@@ -31,7 +23,7 @@
         <div class="modal-content border-cyan">
             <h3 class="cyan-glow">REGISTER IDENTITY</h3>
             <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">
-                Cryptographic clearance authorized. Register a permanent system moniker (4-15 characters, alphanumeric) to access the ledger.
+                Cryptographic clearance authorized. Register a permanent system moniker (4-15 characters, alphanumeric) to access the Forensics Ledger.
             </p>
             <div class="input-group">
                 <input type="text" id="regUsername" placeholder="Enter Professional Identifier" autocomplete="off">
@@ -41,13 +33,23 @@
         </div>
     </div>
 
-    <!-- MAIN DASHBOARD BLUEPRINT (Sidebar + Content) -->
-    <div class="dashboard-container">
+    <!-- 1. STRICT AUTHENTICATION GATE (Visible by default) -->
+    <div id="auth-container" class="container">
+        <h1>Chain Of Custody <br><span>Forensics Ledger</span></h1>
+        <div class="text-center">
+            <p style="margin-bottom: 35px; font-weight: 500;">Initiate secure handshake to access forensics mainframe.</p>
+            <button id="connectBtn" class="btn-primary" onclick="initWeb3()">Authenticate Identity</button>
+            <div id="authError" style="color: var(--alert-red); margin-top: 20px; font-size: 14px; display: none; font-family: 'Fira Code', monospace; font-weight: 600;"></div>
+        </div>
+    </div>
+
+    <!-- 2. MAIN DASHBOARD BLUEPRINT (Hidden by default, unlocked after auth) -->
+    <div id="dashboard-wrapper" class="dashboard-container" style="display: none;">
         
         <!-- PERSISTENT SIDEBAR NAVIGATION -->
         <aside class="sidebar">
             <div class="brand-header">
-                <h2>CUSTODY<span class="cyan-text">LEDGER</span></h2>
+                <h2 style="font-size: 18px; line-height: 1.2;">CHAIN OF CUSTODY<br><span class="cyan-text">FORENSICS LEDGER</span></h2>
             </div>
 
             <div class="user-badge" onclick="switchLayer('profile')">
@@ -60,6 +62,8 @@
 
             <nav class="nav-menu">
                 <button class="nav-btn active" onclick="switchLayer('dashboard')">Operations Hub</button>
+                <button class="nav-btn" onclick="switchLayer('intake')">Module A: Intake</button>
+                <button class="nav-btn" onclick="switchLayer('transfer')">Module B: Transfer</button>
                 <button class="nav-btn" onclick="switchLayer('profile')">Operative Dossier</button>
                 <button class="nav-btn" onclick="switchLayer('history')">Global History</button>
                 <button class="nav-btn" onclick="switchLayer('locker')">Evidence Locker</button>
@@ -72,28 +76,37 @@
         </aside>
 
         <!-- MAIN CONTENT WORKSPACE -->
-        <main class="content-area glass-panel">
+        <main class="content-area">
             
-            <!-- LAYER 1: OPERATIONS HUB (Routing Dashboard) -->
-            <div id="layer-dashboard" class="layer active">
-                <div class="header-flex">
-                    <h1>Operations Terminal</h1>
-                    <button class="btn-primary" id="connectBtn" onclick="initWeb3()" style="width: auto; padding: 12px 24px;">CONNECT ORIGIN NODE</button>
-                </div>
+            <!-- LAYER: OPERATIONS HUB (Minimalist Insignia Screen) -->
+            <div id="layer-dashboard" class="layer active text-center" style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%;">
+                
+                <!-- CRYPTOGRAPHIC SHIELD INSIGNIA -->
+                <svg width="240" height="260" viewBox="0 0 200 220" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 0 20px rgba(0, 240, 255, 0.2)); margin-bottom: 30px;">
+                    <!-- Outer Hex Shield -->
+                    <path d="M100 10 L185 50 L170 160 L100 210 L30 160 L15 50 Z" stroke="var(--input-border)" stroke-width="2" fill="rgba(255, 255, 255, 0.02)"/>
+                    <path d="M100 10 L185 50 L170 160 L100 210 L30 160 L15 50 Z" stroke="var(--accent-cyan)" stroke-width="4" stroke-opacity="0.3"/>
+                    
+                    <!-- Inner Tactical Circuit Hash Lines -->
+                    <path d="M100 30 L160 60 L150 145 L100 185 L50 145 L40 60 Z" stroke="var(--text-muted)" stroke-width="1.5" stroke-dasharray="4 4"/>
+                    <line x1="100" y1="30" x2="100" y2="185" stroke="var(--input-border)" stroke-width="1"/>
+                    <line x1="40" y1="60" x2="160" y2="145" stroke="var(--input-border)" stroke-width="1"/>
+                    <line x1="40" y1="145" x2="160" y2="60" stroke="var(--input-border)" stroke-width="1"/>
+                    
+                    <!-- Pulsing Central Node -->
+                    <circle cx="100" cy="102" r="16" fill="var(--bg-deep)" stroke="var(--accent-cyan)" stroke-width="3"/>
+                    <circle cx="100" cy="102" r="8" fill="var(--accent-cyan)" style="filter: drop-shadow(0 0 12px var(--accent-cyan));">
+                        <animate attributeName="opacity" values="0.4;1;0.4" dur="3s" repeatCount="indefinite" />
+                    </circle>
+                    <circle cx="100" cy="102" r="28" stroke="var(--accent-cyan)" stroke-width="1" stroke-opacity="0.5" stroke-dasharray="2 6">
+                        <animateTransform attributeName="transform" type="rotate" from="0 100 102" to="360 100 102" dur="10s" repeatCount="indefinite" />
+                    </circle>
+                </svg>
 
-                <p style="margin-bottom: 30px; font-weight: 500; color: var(--text-muted);">Select an authorized module to proceed.</p>
-
-                <!-- Restored Decoupled Routing Menu -->
-                <button class="btn-menu" onclick="switchLayer('intake')"><span>A. Log Initial Evidence (Role 1 Only)</span> <span class="cyan-text" style="font-weight: 800;">>></span></button>
-                <button class="btn-menu" onclick="switchLayer('transfer')"><span>B. Transfer Custody Signature (Universal)</span> <span class="cyan-text" style="font-weight: 800;">>></span></button>
-                <button class="btn-menu" onclick="switchLayer('history')"><span>C. Global Immutable History</span> <span class="cyan-text" style="font-weight: 800;">>></span></button>
-                <button class="btn-menu" onclick="switchLayer('locker')" style="border-left: 4px solid var(--success-green);"><span>D. My Evidence Locker</span> <span class="cyan-text" style="font-weight: 800;">>></span></button>
-                <button class="btn-menu" onclick="switchLayer('help')" style="border-left: 4px solid var(--lab-purple);"><span>E. System Guide</span> <span class="cyan-text" style="font-weight: 800;">>></span></button>
             </div>
 
             <!-- LAYER: DECOUPLED INTAKE MODULE -->
             <div id="layer-intake" class="layer" style="display: none;">
-                <button class="btn-back" onclick="switchLayer('dashboard')">← Return to Hub</button>
                 <h1>Initial Evidence Intake</h1>
                 <p style="color: var(--text-muted); margin-bottom: 25px;">Clearance Level 1 Required. Execute initial chain logging.</p>
                 
@@ -114,7 +127,6 @@
 
             <!-- LAYER: DECOUPLED TRANSFER MODULE -->
             <div id="layer-transfer" class="layer" style="display: none;">
-                <button class="btn-back" onclick="switchLayer('dashboard')">← Return to Hub</button>
                 <h1>Chain of Custody Transfer</h1>
                 <p style="color: var(--text-muted); margin-bottom: 25px;">Execute cryptographic transfer of active physical assets.</p>
 
@@ -147,7 +159,6 @@
 
             <!-- LAYER: OPERATIVE DOSSIER -->
             <div id="layer-profile" class="layer" style="display: none;">
-                <button class="btn-back" onclick="switchLayer('dashboard')">← Return to Hub</button>
                 <h1>Operative Dossier</h1>
                 
                 <div class="profile-grid">
@@ -188,11 +199,14 @@
 
             <!-- LAYER: SYSTEM CONFIGURATIONS -->
             <div id="layer-settings" class="layer" style="display: none;">
-                <button class="btn-back" onclick="switchLayer('dashboard')">← Return to Hub</button>
                 <h1>System Configurations</h1>
 
                 <div class="settings-group">
                     <h4>1. Interface & Optics</h4>
+                    <div class="toggle-row">
+                        <span class="toggle-label">Dark Optics Mode</span>
+                        <label class="switch"><input type="checkbox" id="opticsToggle" onchange="toggleTheme()" checked><span class="slider"></span></label>
+                    </div>
                     <div class="toggle-row">
                         <span class="toggle-label">Anonymize Alias Output</span>
                         <label class="switch"><input type="checkbox" id="anonToggle"><span class="slider"></span></label>
@@ -207,11 +221,11 @@
                     <h4>2. Network Routing & Gas Parameters</h4>
                     <div class="grid-layout" style="grid-template-columns: 1fr 1fr;">
                         <div class="input-group">
-                            <label>Max Priority Fee (Gwei)</label>
+                            <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 8px;">Max Priority Fee (Gwei)</label>
                             <input type="number" id="gasPriority" placeholder="Default: 30" value="30">
                         </div>
                         <div class="input-group">
-                            <label>Max Fee Per Gas (Gwei)</label>
+                            <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 8px;">Max Fee Per Gas (Gwei)</label>
                             <input type="number" id="gasMax" placeholder="Default: 40" value="40">
                         </div>
                     </div>
@@ -220,7 +234,7 @@
                 <div class="settings-group">
                     <h4>3. Session Security</h4>
                     <div class="input-group">
-                        <label>Auto-Terminate Idle Session</label>
+                        <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 8px;">Auto-Terminate Idle Session</label>
                         <select id="autoLockTimer" style="cursor: pointer;">
                             <option value="0">Disabled (Manual Logout Only)</option>
                             <option value="5">Lock after 5 Minutes</option>
@@ -261,14 +275,12 @@
 
             <!-- LAYER: IMMUTABLE HISTORY -->
             <div id="layer-history" class="layer" style="display: none;">
-                <button class="btn-back" onclick="switchLayer('dashboard')">← Return to Hub</button>
                 <h1>Global Immutable History</h1>
                 <div id="historyContainer" class="history-scroll-box"></div>
             </div>
 
             <!-- LAYER: EVIDENCE LOCKER -->
             <div id="layer-locker" class="layer" style="display: none;">
-                <button class="btn-back" onclick="switchLayer('dashboard')">← Return to Hub</button>
                 <h1>My Evidence Locker</h1>
                 <div id="lockerGrid" class="grid-container"></div>
             </div>
@@ -293,9 +305,8 @@
 
             <!-- LAYER: SYSTEM GUIDE -->
             <div id="layer-help" class="layer" style="display: none;">
-                <button class="btn-back" onclick="switchLayer('dashboard')">← Return to Hub</button>
                 <h1>System Protocol Guide</h1>
-                <p style="margin-bottom: 20px; color: var(--text-muted);">Standard Operating Procedures for the CYB-305 Immutable Ledger.</p>
+                <p style="margin-bottom: 20px; color: var(--text-muted);">Standard Operating Procedures for the Chain Of Custody Forensics Ledger.</p>
                 <div class="panel" style="margin-bottom: 15px;">
                     <h4 class="cyan-text" style="margin: 0 0 10px 0;">1. Identity & Access Control (RBAC)</h4>
                     <p style="margin: 0; color: var(--text-muted); line-height: 1.5;">Access to evidence is strictly governed by the smart contract based on your assigned clearance.</p>
