@@ -84,8 +84,8 @@ async function authenticateIdentity() {
             return;
         }
 
-        // Build Local Directory from Events
-        await syncDirectory();
+        // Build Local Directory in the background so it doesn't block login
+        syncDirectory();
 
         // Update UI Dashboard Metrics
         document.getElementById("navUsername").innerText = username || "UNREGISTERED";
@@ -148,6 +148,7 @@ function logout() {
 // ==========================================================================
 
 async function syncDirectory() {
+    // Clear out old data before rebuilding
     operativeDirectory.clear();
     reverseDirectory.clear();
     
@@ -155,10 +156,10 @@ async function syncDirectory() {
     
     try {
         const latestBlock = await provider.getBlockNumber();
-        const CHUNK_SIZE = 5000; // Safe limit for Amoy public RPCs
-        let fromBlock = DEPLOYMENT_BLOCK;
+        const CHUNK_SIZE = 5000; // Safe limit to prevent RPC throttling
+        let fromBlock = DEPLOYMENT_BLOCK; // Make sure this is set at the top of your file!
 
-        // Loop through the blockchain in 5,000-block chunks
+        // Silently loop through the blockchain in 5,000-block chunks
         while (fromBlock <= latestBlock) {
             let toBlock = fromBlock + CHUNK_SIZE;
             if (toBlock > latestBlock) toBlock = latestBlock;
@@ -174,9 +175,12 @@ async function syncDirectory() {
 
             fromBlock = toBlock + 1;
         }
+        
+        // Let you know via the developer console that the background sync finished
+        console.log(`[SYSTEM] Background directory sync complete. Loaded ${operativeDirectory.size} operatives.`);
+        
     } catch (err) {
-        console.warn("Directory sync warning: RPC node throttled the request. Ghost autocomplete may be incomplete.", err);
-        // We do not throw the error here, ensuring the user can still log in even if the node is acting up.
+        console.warn("[WARNING] Background sync interrupted by RPC node. Ghost autocomplete may be incomplete.", err);
     }
 }
 
