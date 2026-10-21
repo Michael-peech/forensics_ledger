@@ -1,5 +1,5 @@
 // --- CONFIGURATION & ABI ---
-const CONTRACT_ADDRESS = "0xF8879C91342a9d4330974Cb678F36Db00Ace1b92";
+const CONTRACT_ADDRESS = "0xYOUR_V4_6_CONTRACT_ADDRESS"; // Paste your deployed Polygon Amoy address here
 const POLYGON_AMOY_CHAIN_ID = "0x13882"; 
 
 const ABI = [
@@ -31,7 +31,7 @@ let sessionTimeout;
 let autoLockMinutes = 0;
 
 // ==========================================================================
-// 1. INITIALIZATION & AUTHENTICATION
+// 1. INITIALIZATION & STRICT AUTHENTICATION GATE
 // ==========================================================================
 
 async function initWeb3() {
@@ -83,24 +83,28 @@ async function authenticateIdentity() {
             return;
         }
 
-        // Build Local Directory from Events (Solves the Array Bricking Vulnerability)
+        // Build Local Directory from Events
         await syncDirectory();
 
-        // Update UI Dashboard
+        // Update UI Dashboard Metrics
         document.getElementById("navUsername").innerText = username || "UNREGISTERED";
         document.getElementById("navRole").innerText = isUserAdmin ? "System Admin" : `Role ID: ${userRole}`;
         document.getElementById("badgeInitials").innerText = username ? username.substring(0, 2).toUpperCase() : "XX";
         
-        // Populate Dossier
         document.getElementById("profileUsername").innerText = username || "UNREGISTERED";
         document.getElementById("profileRole").innerText = `Level ${userRole} ${isUserAdmin ? "(Admin)" : ""}`;
         document.getElementById("profileBadge").innerText = badge > 0 ? badge : "N/A";
         document.getElementById("profileAddress").innerText = userAddress;
 
-        // Show Admin C&C if authorized
+        // Show Admin Command & Control if authorized
         if (isUserAdmin) {
             document.getElementById("adminControlsGroup").style.display = "block";
         }
+
+        // Pass the Gate: Hide Auth, Show Dashboard & Settings Gear
+        document.getElementById("auth-container").style.display = "none";
+        document.getElementById("dashboard-wrapper").style.display = "flex";
+        document.getElementById("settingsGear").style.display = "flex";
 
         // Route based on Registration Status
         if (userRole > 0 && !username) {
@@ -129,19 +133,23 @@ function logout() {
     userRole = 0;
     isUserAdmin = false;
     clearTimeout(sessionTimeout);
-    switchLayer('auth');
+    
+    // Hide Dashboard, Restore Auth Gate
+    document.getElementById("dashboard-wrapper").style.display = "none";
+    document.getElementById("settingsGear").style.display = "none";
+    document.getElementById("auth-container").style.display = "block";
+    
     location.reload(); // Hard wipe memory state
 }
 
 // ==========================================================================
-// 2. EVENT-DRIVEN DIRECTORY (Replaces Unbounded Arrays)
+// 2. EVENT-DRIVEN DIRECTORY 
 // ==========================================================================
 
 async function syncDirectory() {
     operativeDirectory.clear();
     reverseDirectory.clear();
     
-    // Fetch all UsernameRegistered events from block 0 to latest
     const filter = contract.filters.UsernameRegistered();
     const events = await contract.queryFilter(filter);
     
@@ -245,11 +253,10 @@ transferInput.addEventListener("input", (e) => {
 
     if (!val) return;
 
-    // 1. Check for raw Hex Paste overriding
+    // Check for raw Hex Paste overriding
     if (val.length === 42 && val.startsWith("0x")) {
         const matchedName = reverseDirectory.get(lowerVal);
         if (matchedName) {
-            // Flash cyan to confirm match, then resolve text
             transferInput.style.color = "var(--accent-cyan)";
             setTimeout(() => { 
                 transferInput.value = matchedName; 
@@ -259,20 +266,14 @@ transferInput.addEventListener("input", (e) => {
         return;
     }
 
-    // 2. Match typing against usernames
+    // Match typing against usernames
     const matches = Array.from(operativeDirectory.keys()).filter(name => name.startsWith(lowerVal));
     
     if (matches.length === 1) {
-        // Happy Path: Ghost Prediction
-        const originalCase = Array.from(operativeDirectory.keys()).find(k => k === matches[0]); // (Simplified logic assuming lowercase map)
-        
-        // Find the actual display name from reverse directory to preserve capitalization
         const addr = operativeDirectory.get(matches[0]);
         const displayName = reverseDirectory.get(addr.toLowerCase());
-
         ghostInput.value = val + displayName.substring(val.length);
     } else if (matches.length > 1) {
-        // Collision Resolver: Smart Dropdown
         matches.forEach(match => {
             const addr = operativeDirectory.get(match);
             const displayName = reverseDirectory.get(addr.toLowerCase());
@@ -325,6 +326,20 @@ async function executeAdminAuth() {
     }
 }
 
+async function executeAddAdmin() {
+    const target = document.getElementById("newAdminAddress").value;
+    if (!target) return uiStatus("statusAdminAuth", "Missing target node address.", true);
+    
+    try {
+        uiStatus("statusAdminAuth", "Elevating Privileges...", false);
+        const tx = await contract.addAdmin(target, getGasOverrides());
+        await tx.wait();
+        uiStatus("statusAdminAuth", "Admin Privileges Elevated.", false);
+    } catch (err) {
+        uiStatus("statusAdminAuth", extractRevertReason(err), true);
+    }
+}
+
 function getGasOverrides() {
     const priority = document.getElementById("gasPriority").value || 30;
     const max = document.getElementById("gasMax").value || 40;
@@ -334,7 +349,7 @@ function getGasOverrides() {
     };
 }
 
-// Session Security: Track Mouse Movement
+// Session Security
 document.getElementById("autoLockTimer").addEventListener("change", (e) => {
     autoLockMinutes = parseInt(e.target.value);
     resetSessionTimer();
@@ -363,29 +378,15 @@ function switchLayer(layerId) {
         el.style.display = 'none';
     });
     
-    // Deactivate all sidebar buttons
     document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
     
     const targetLayer = document.getElementById(`layer-${layerId}`);
     targetLayer.style.display = 'block';
-    // Small timeout to allow CSS block rendering before adding active class for animation
     setTimeout(() => targetLayer.classList.add('active'), 10);
 }
 
 function toggleTheme() {
-    const body = document.body;
-    body.classList.toggle("theme-dark");
-    
-    const isDark = body.classList.contains("theme-dark");
-    document.getElementById("opticsToggle").checked = isDark;
-    
-    // Update SVG Path for Sun/Moon
-    const iconPath = document.querySelector("#themeIcon path");
-    if(isDark) {
-        iconPath.setAttribute("d", "M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"); // Moon
-    } else {
-        iconPath.setAttribute("d", "M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"); // Sun
-    }
+    document.body.classList.toggle("theme-dark");
 }
 
 function uiStatus(elementId, msg, isError) {
@@ -398,7 +399,7 @@ function uiStatus(elementId, msg, isError) {
     if(!isError) box.classList.add("active");
     else box.classList.remove("active");
     
-    if(!isError && !msg.includes("Await")) {
+    if(!isError && !msg.includes("Await") && !msg.includes("Transmitting") && !msg.includes("Executing")) {
         setTimeout(() => { box.style.display = "none"; }, 5000);
     }
 }
